@@ -1,6 +1,7 @@
 module.exports = {
     env: {
         browser: true,
+        node: true,
         es2021: true,
     },
     extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
@@ -11,5 +12,10 @@ module.exports = {
         sourceType: "module",
     },
     plugins: ["@typescript-eslint"],
-    rules: {},
+    rules: {
+        "@typescript-eslint/no-unused-vars": [
+            "error",
+            { argsIgnorePattern: "^_" },
+        ],
+    },
 }
