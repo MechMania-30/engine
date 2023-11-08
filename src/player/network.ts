@@ -5,7 +5,7 @@ import {
     Request,
     RequestPhase,
     PlaneSelectRequest,
-    PlaneSelectResponse
+    PlaneSelectResponse,
 } from "."
 import SocketServer from "../util/socket-server"
 
@@ -23,6 +23,21 @@ export default class NetworkPlayer extends Player {
 
     private receive() {
         return this.server.read()
+    }
+
+    async getPlanesSelected(
+        request: PlaneSelectRequest
+    ): Promise<PlaneSelectResponse> {
+        await this.send({
+            phase: RequestPhase.PLANE_SELECT,
+            data: request,
+        })
+
+        const got = await this.receive()
+
+        const response = JSON.parse(got) as PlaneSelectResponse
+
+        return response
     }
 
     async getHello(request: HelloWorldRequest): Promise<HelloWorldResponse> {
@@ -45,18 +60,5 @@ export default class NetworkPlayer extends Player {
         })
 
         this.server.close()
-    }
-
-    async getPlanesSelected(request: PlaneSelectRequest): Promise<PlaneSelectResponse> {
-        await this.send({
-            phase: RequestPhase.PLANE_SELECT,
-            data: request,
-        });
-
-        const got = await this.receive();
-
-        const response = JSON.parse(got) as PlaneSelectResponse;
-
-        return response;
     }
 }

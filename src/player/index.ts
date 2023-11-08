@@ -3,7 +3,9 @@ import { PlaneType } from "../plane"
 export abstract class Player {
     constructor(readonly teamName: string) {}
 
-    abstract getPlanesSelected(request: PlaneSelectRequest): Promise<PlaneSelectResponse>
+    abstract getPlanesSelected(
+        request: PlaneSelectRequest
+    ): Promise<PlaneSelectResponse>
     abstract getHello(request: HelloWorldRequest): Promise<HelloWorldResponse>
     abstract finish(): Promise<void>
 }
@@ -33,7 +35,7 @@ export interface HelloWorldResponse {
 export interface PlaneSelectRequest {}
 
 export type PlaneSelectResponse = {
-    type: PlaneType,
+    type: PlaneType
     count: number
 }[]
 
