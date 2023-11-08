@@ -14,16 +14,10 @@ export default class ComputerPlayer extends Player {
         }
     }
 
-    async finish(): Promise<void> {
-        // Do nothing
-    }
-
     async getPlanesSelected(
         _request: PlaneSelectRequest
     ): Promise<PlaneSelectResponse> {
-        // Implement the logic to select planes for the Computer player (random for now)
-        // Do you plan to just use randomstrategy here?
-        // I just put Math line for testing purposes
+        // Ask for a random number of basic planes
         const selectedPlanes: PlaneSelectResponse = [
             {
                 type: PlaneType.BASIC,
@@ -32,5 +26,9 @@ export default class ComputerPlayer extends Player {
         ]
 
         return selectedPlanes
+    }
+
+    async finish(): Promise<void> {
+        // Do nothing
     }
 }
