@@ -42,7 +42,7 @@ export default class Game {
             const player1PlanesSelectedResponse =
                 await this.player1.getPlanesSelected(planeRequest)
             this.createPlanes(this.player1, player1PlanesSelectedResponse)
-            console.log(`Selected planes: ${this.planes}`)
+            console.log(`Selected planes: ${JSON.stringify(this.planes)}`)
         }
 
         this.turn += 1
