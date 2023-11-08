@@ -31,7 +31,6 @@ export interface HelloWorldResponse {
     good: boolean
 }
 
-// TODO
 export interface PlaneSelectRequest {}
 
 export type PlaneSelectResponse = {
