@@ -25,6 +25,19 @@ export default class NetworkPlayer extends Player {
         return this.server.read()
     }
 
+    async getHello(request: HelloWorldRequest): Promise<HelloWorldResponse> {
+        await this.send({
+            phase: RequestPhase.HELLO_WORLD,
+            data: request,
+        })
+
+        const got = await this.receive()
+
+        const response = JSON.parse(got) as HelloWorldResponse
+
+        return response
+    }
+
     async getPlanesSelected(
         request: PlaneSelectRequest
     ): Promise<PlaneSelectResponse> {
@@ -36,19 +49,6 @@ export default class NetworkPlayer extends Player {
         const got = await this.receive()
 
         const response = JSON.parse(got) as PlaneSelectResponse
-
-        return response
-    }
-
-    async getHello(request: HelloWorldRequest): Promise<HelloWorldResponse> {
-        await this.send({
-            phase: RequestPhase.HELLO_WORLD,
-            data: request,
-        })
-
-        const got = await this.receive()
-
-        const response = JSON.parse(got) as HelloWorldResponse
 
         return response
     }
