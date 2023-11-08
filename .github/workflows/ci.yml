@@ -1,0 +1,51 @@
+name: CI
+on:
+  push:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+    - name: Install modules
+      run: npm install
+    - name: Build
+      run: npm run build
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+    - name: Install modules
+      run: npm install
+    - name: Run linter
+      run: npm run lint:check
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+    - name: Install modules
+      run: npm install
+    - name: Run formatter
+      run: npm run format:check
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - uses: actions/setup-node@v3
+  #     with:
+  #       node-version: 18
+  #   - name: Install modules
+  #     run: npm install
+  #   - name: Get number of CPU cores
+  #     id: cpu-cores
+  #     uses: SimenB/github-actions-cpu-cores@v2
+  #   - name: Run tests
+  #     run: npm run test --max-workers ${{ steps.cpu-cores.outputs.count }}
