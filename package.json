@@ -2,7 +2,12 @@
     "name": "engine",
     "version": "0.1.0",
     "scripts": {
+        "format:check": "prettier --check '**/*.{ts,js,cjs,json}'",
+        "format": "prettier --write '**/*.{ts,js,cjs,json}'",
+        "lint:check": "eslint src --ext .js,.jsx,.ts,.tsx",
+        "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
         "build": "tsc",
+        "verify": "npm run lint:check && npm run format:check && npm run build",
         "start": "node --enable-source-maps out/main.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
