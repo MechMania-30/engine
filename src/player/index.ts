@@ -3,10 +3,10 @@ import { PlaneType } from "../plane"
 export abstract class Player {
     constructor(readonly teamName: string) {}
 
+    abstract getHello(request: HelloWorldRequest): Promise<HelloWorldResponse>
     abstract getPlanesSelected(
         request: PlaneSelectRequest
     ): Promise<PlaneSelectResponse>
-    abstract getHello(request: HelloWorldRequest): Promise<HelloWorldResponse>
     abstract finish(): Promise<void>
 }
 
