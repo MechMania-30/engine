@@ -21,7 +21,7 @@ export default class ComputerPlayer extends Player {
         const selectedPlanes: PlaneSelectResponse = [
             {
                 type: PlaneType.BASIC,
-                count: Math.ceil(5 + Math.random() * 5),
+                count: Math.floor(5 + Math.random() * 6),
             },
         ]
 
