@@ -1,7 +1,7 @@
 import { PlaneType } from "../plane"
 
 export abstract class Player {
-    constructor(readonly teamName: string) {}
+    constructor(readonly team: string) {}
 
     abstract getHello(request: HelloWorldRequest): Promise<HelloWorldResponse>
     abstract getPlanesSelected(

@@ -18,7 +18,7 @@ export default class Game {
     async createPlanes(player: Player, selected: PlaneSelectResponse) {
         for (const [type, count] of selected.entries()) {
             for (let i = 0; i < count; i++) {
-                this.planes.push(new Plane(player.teamName, type))
+                this.planes.push(new Plane(player.team, type))
             }
         }
     }

@@ -12,10 +12,10 @@ import SocketServer from "../util/socket-server"
 
 export default class NetworkPlayer extends Player {
     constructor(
-        teamName: string,
+        team: string,
         private readonly server: SocketServer
     ) {
-        super(teamName)
+        super(team)
     }
 
     private send(request: Request) {
