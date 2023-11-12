@@ -1,7 +1,12 @@
+import { PlaneType } from "../plane"
+
 export abstract class Player {
     constructor(readonly teamName: string) {}
 
     abstract getHello(request: HelloWorldRequest): Promise<HelloWorldResponse>
+    abstract getPlanesSelected(
+        request: PlaneSelectRequest
+    ): Promise<PlaneSelectResponse>
     abstract finish(): Promise<void>
 }
 
@@ -26,10 +31,9 @@ export interface HelloWorldResponse {
     good: boolean
 }
 
-// TODO
 export interface PlaneSelectRequest {}
 
-export interface PlaceSelectResponse {}
+export type PlaneSelectResponse = Map<PlaneType, number>
 
 // TODO
 export interface SteerInputRequest {}
