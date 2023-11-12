@@ -33,10 +33,7 @@ export interface HelloWorldResponse {
 
 export interface PlaneSelectRequest {}
 
-export type PlaneSelectResponse = {
-    type: PlaneType
-    count: number
-}[]
+export type PlaneSelectResponse = Map<PlaneType, number>
 
 // TODO
 export interface SteerInputRequest {}

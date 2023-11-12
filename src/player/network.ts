@@ -7,6 +7,7 @@ import {
     PlaneSelectRequest,
     PlaneSelectResponse,
 } from "."
+import { PlaneType } from "../plane"
 import SocketServer from "../util/socket-server"
 
 export default class NetworkPlayer extends Player {
@@ -48,7 +49,13 @@ export default class NetworkPlayer extends Player {
 
         const got = await this.receive()
 
-        const response = JSON.parse(got) as PlaneSelectResponse
+        const rawResponse = JSON.parse(got)
+
+        const response = new Map<PlaneType, number>()
+
+        for (const [key, value] of Object.entries(rawResponse)) {
+            response.set(key as PlaneType, value as number)
+        }
 
         return response
     }
