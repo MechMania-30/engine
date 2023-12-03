@@ -6,6 +6,7 @@ import NetworkPlayer from "./player/network"
 import SocketServer from "./util/socket-server"
 import { mkdir } from "fs/promises"
 import path from "path"
+import * as CONFIG from "./config"
 
 const USAGE = `Proper usage: npm start [team0port] [team1port]
 
@@ -57,13 +58,13 @@ async function main() {
     }
 
     const [player0, player1] = await Promise.all([
-        setupPlayerForPort("team0", team0Port),
-        setupPlayerForPort("team1", team1Port),
+        setupPlayerForPort(CONFIG.TEAMS.ZERO, team0Port),
+        setupPlayerForPort(CONFIG.TEAMS.ONE, team1Port),
     ])
 
     const game = new Game(player0, player1)
 
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i <= CONFIG.TURNS; i++) {
         console.log(`Start turn ${i}`)
         await game.runTurn()
     }
@@ -80,16 +81,7 @@ async function main() {
         recursive: true,
     })
 
-    await writeFileSync(
-        OUTPUT,
-        JSON.stringify(
-            {
-                theAnswer: 42,
-            },
-            undefined,
-            "\t"
-        )
-    )
+    await writeFileSync(OUTPUT, game.log.toString())
 }
 
 main()

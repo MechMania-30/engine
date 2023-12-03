@@ -1,14 +1,14 @@
-import { Plane } from "./plane"
-import {
-    HelloWorldRequest,
-    PlaneSelectRequest,
-    PlaneSelectResponse,
-    Player,
-} from "./player"
+import { Plane, PlaneType, Position } from "./plane"
+import { PlaneSelectRequest, PlaneSelectResponse, Player } from "./player"
+import * as CONFIG from "./config"
+import rad from "./util/rad"
+import { Log } from "./log"
+import deepCopy from "./util/deepCopy"
 
 export default class Game {
     private turn: number = 0
     private planes: Plane[] = []
+    public log: Log = new Log()
 
     constructor(
         private player0: Player,
@@ -16,24 +16,25 @@ export default class Game {
     ) {}
 
     async createPlanes(player: Player, selected: PlaneSelectResponse) {
+        const toPlace: PlaneType[] = []
         for (const [type, count] of selected.entries()) {
             for (let i = 0; i < count; i++) {
-                this.planes.push(new Plane(player.team, type))
+                toPlace.push(type)
             }
+        }
+
+        const { position: spawnPosition, angle: spawnAngle } =
+            CONFIG.SPAWNS[player.team]
+
+        for (let i = 0; i < toPlace.length; i++) {
+            const type = toPlace[i]
+            const offset = (i - toPlace.length / 2) * CONFIG.PLANE_SPAWN_SPREAD
+            const pos = new Position(spawnPosition.x + offset, spawnPosition.y)
+            this.planes.push(new Plane(player.team, type, pos, spawnAngle))
         }
     }
 
     async runTurn() {
-        const request: HelloWorldRequest = {
-            message: "Hello players!",
-        }
-
-        const player0HelloWorldResponse = await this.player0.getHello(request)
-        const player1HelloWorldResponse = await this.player1.getHello(request)
-
-        console.log(`Player 0 good: ${player0HelloWorldResponse.good}`)
-        console.log(`Player 1 good: ${player1HelloWorldResponse.good}`)
-
         if (this.turn == 0) {
             const planeRequest: PlaneSelectRequest = {}
             const player0PlanesSelectedResponse =
@@ -43,8 +44,23 @@ export default class Game {
                 await this.player1.getPlanesSelected(planeRequest)
             this.createPlanes(this.player1, player1PlanesSelectedResponse)
             console.log("Selected planes: ", this.planes)
+
+            this.turn = 1
+            return // No action for turn 0
         }
 
+        // TODO: Steering goes here
+
+        for (const plane of this.planes) {
+            const stats = CONFIG.PLANE_STATS[plane.type]
+            const dx = Math.cos(rad(plane.angle)) * stats.speed
+            const dy = -Math.sin(rad(plane.angle)) * stats.speed
+            plane.position.add(new Position(dx, dy))
+        }
+
+        this.log.addTurn({
+            planes: deepCopy(this.planes),
+        })
         this.turn += 1
     }
 
