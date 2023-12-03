@@ -1,10 +1,11 @@
-import { Plane } from "./plane"
+import { Plane, PlaneType, Position } from "./plane"
 import {
     HelloWorldRequest,
     PlaneSelectRequest,
     PlaneSelectResponse,
     Player,
 } from "./player"
+import * as CONFIG from "./config"
 
 export default class Game {
     private turn: number = 0
@@ -16,10 +17,21 @@ export default class Game {
     ) {}
 
     async createPlanes(player: Player, selected: PlaneSelectResponse) {
+        const toPlace: PlaneType[] = []
         for (const [type, count] of selected.entries()) {
             for (let i = 0; i < count; i++) {
-                this.planes.push(new Plane(player.team, type))
+                toPlace.push(type)
             }
+        }
+
+        const { position: spawnPosition, angle: spawnAngle } =
+            CONFIG.SPAWNS[player.team]
+
+        for (let i = 0; i < toPlace.length; i++) {
+            const type = toPlace[i]
+            const offset = (i - toPlace.length / 2) * CONFIG.PLANE_SPAWN_SPREAD
+            const pos = new Position(spawnPosition.x + offset, spawnPosition.y)
+            this.planes.push(new Plane(player.team, type, pos, spawnAngle))
         }
     }
 
