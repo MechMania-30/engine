@@ -7,9 +7,9 @@ export default function deepCopy<T>(obj: T): T {
         return obj.map((item) => deepCopy(item)) as T
     }
 
-    const result: any = {}
+    const result: Record<string, unknown> = {}
     for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
             result[key] = deepCopy(obj[key])
         }
     }
