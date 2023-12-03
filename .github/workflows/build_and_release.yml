@@ -1,0 +1,68 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Only trigger on tags starting with 'v'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          path: "code"
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install modules
+        run: cd code && npm install
+
+      - name: Extract Version from Tag
+        id: extract_version
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/}
+
+      - name: Build & Zip
+        run: |
+          cd code && npm run build && cd ..
+          rm code/node_modules -rf
+          cd code && zip -r ../engine-${{ steps.extract_version.outputs.version }}.zip * && cd ..
+          mkdir engine-aws-upload
+          cp engine-${{ steps.extract_version.outputs.version }}.zip engine-aws-upload/engine.zip
+
+      - name: Create Release Draft
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.extract_version.outputs.version }}
+          release_name: ${{ steps.extract_version.outputs.version }}
+          draft: true
+
+      - name: Upload Archive to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: engine-${{ steps.extract_version.outputs.version }}.zip
+          asset_name: engine-${{ steps.extract_version.outputs.version }}.zip
+          asset_content_type: application/octet-stream
+
+      - name: Upload Archive as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: engine-${{ steps.extract_version.outputs.version }}
+          path: engine-${{ steps.extract_version.outputs.version }}.zip
+
+      - uses: shallwefootball/s3-upload-action@4350529f410221787ccf424e50133cbc1b52704e
+        name: Upload zip to S3
+        with:
+          aws_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_bucket: ${{ secrets.AWS_BUCKET }}
+          source_dir: 'engine-aws-upload'
+          destination_dir: "./"
