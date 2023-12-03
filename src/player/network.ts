@@ -1,6 +1,4 @@
 import {
-    HelloWorldRequest,
-    HelloWorldResponse,
     Player,
     Request,
     RequestPhase,
@@ -24,19 +22,6 @@ export default class NetworkPlayer extends Player {
 
     private receive() {
         return this.server.read()
-    }
-
-    async getHello(request: HelloWorldRequest): Promise<HelloWorldResponse> {
-        await this.send({
-            phase: RequestPhase.HELLO_WORLD,
-            data: request,
-        })
-
-        const got = await this.receive()
-
-        const response = JSON.parse(got) as HelloWorldResponse
-
-        return response
     }
 
     async getPlanesSelected(

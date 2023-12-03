@@ -1,10 +1,5 @@
 import { Plane, PlaneType, Position } from "./plane"
-import {
-    HelloWorldRequest,
-    PlaneSelectRequest,
-    PlaneSelectResponse,
-    Player,
-} from "./player"
+import { PlaneSelectRequest, PlaneSelectResponse, Player } from "./player"
 import * as CONFIG from "./config"
 import rad from "./util/rad"
 import { Log } from "./log"
@@ -40,16 +35,6 @@ export default class Game {
     }
 
     async runTurn() {
-        const request: HelloWorldRequest = {
-            message: "Hello players!",
-        }
-
-        const player0HelloWorldResponse = await this.player0.getHello(request)
-        const player1HelloWorldResponse = await this.player1.getHello(request)
-
-        console.log(`Player 0 good: ${player0HelloWorldResponse.good}`)
-        console.log(`Player 1 good: ${player1HelloWorldResponse.good}`)
-
         if (this.turn == 0) {
             const planeRequest: PlaneSelectRequest = {}
             const player0PlanesSelectedResponse =
