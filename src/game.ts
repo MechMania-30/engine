@@ -6,10 +6,14 @@ import {
     Player,
 } from "./player"
 import * as CONFIG from "./config"
+import rad from "./util/rad"
+import { Log } from "./log"
+import deepCopy from "./util/deepCopy"
 
 export default class Game {
     private turn: number = 0
     private planes: Plane[] = []
+    public log: Log = new Log()
 
     constructor(
         private player0: Player,
@@ -55,8 +59,23 @@ export default class Game {
                 await this.player1.getPlanesSelected(planeRequest)
             this.createPlanes(this.player1, player1PlanesSelectedResponse)
             console.log("Selected planes: ", this.planes)
+
+            this.turn = 1
+            return // No action for turn 0
         }
 
+        // TODO: Steering goes here
+
+        for (const plane of this.planes) {
+            const stats = CONFIG.PLANE_STATS[plane.type]
+            const dx = Math.cos(rad(plane.angle)) * stats.speed
+            const dy = -Math.sin(rad(plane.angle)) * stats.speed
+            plane.position.add(new Position(dx, dy))
+        }
+
+        this.log.addTurn({
+            planes: deepCopy(this.planes),
+        })
         this.turn += 1
     }
 

@@ -64,7 +64,7 @@ async function main() {
 
     const game = new Game(player0, player1)
 
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i <= CONFIG.TURNS; i++) {
         console.log(`Start turn ${i}`)
         await game.runTurn()
     }
@@ -81,16 +81,7 @@ async function main() {
         recursive: true,
     })
 
-    await writeFileSync(
-        OUTPUT,
-        JSON.stringify(
-            {
-                theAnswer: 42,
-            },
-            undefined,
-            "\t"
-        )
-    )
+    await writeFileSync(OUTPUT, game.log.toString())
 }
 
 main()

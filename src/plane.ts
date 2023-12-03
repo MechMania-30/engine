@@ -4,9 +4,14 @@ export enum PlaneType {
 
 export class Position {
     constructor(
-        readonly x: number,
-        readonly y: number
+        public x: number,
+        public y: number
     ) {}
+
+    add(other: Position) {
+        this.x += other.x
+        this.y += other.y
+    }
 }
 
 export enum Direction {
@@ -24,7 +29,11 @@ export class Plane {
     constructor(
         readonly team: string,
         readonly type: PlaneType,
-        readonly position: Position,
-        readonly angle: number // Angle that faces [0, 360) so 0 = East, 90 = North, etc.
+        public position: Position,
+        public angle: number // Angle that faces [0, 360) so 0 = East, 90 = North, etc.
     ) {}
+}
+
+export class PlaneStats {
+    constructor(readonly speed: number) {}
 }

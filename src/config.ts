@@ -1,6 +1,7 @@
-import { Direction, Position } from "./plane"
+import { Direction, PlaneStats, PlaneType, Position } from "./plane"
 
 export const MAP_SIZE = 100 // Size of map
+export const TURNS = 500 // Number of turns
 
 // Possible teams
 export const TEAMS = {
@@ -25,3 +26,8 @@ export const SPAWNS: {
     },
 }
 export const PLANE_SPAWN_SPREAD = 2.5 // How far apart planes from same team spawn from each other
+
+// Plane type => plane stats
+export const PLANE_STATS: Record<PlaneType, PlaneStats> = {
+    [PlaneType.BASIC]: new PlaneStats(4.5),
+}
