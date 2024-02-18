@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*'  # Only trigger on tags starting with 'v'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Specify a version tag (v#.#.#)"
+        required: true
 
 jobs:
   build:
@@ -22,7 +27,14 @@ jobs:
 
       - name: Extract Version from Tag
         id: extract_version
-        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/}
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "Using tag provided in workflow_dispatch"
+            echo ::set-output name=version::${{ github.event.inputs.tag }}
+          else
+            echo "Using tag from push event"
+            echo ::set-output name=version::${GITHUB_REF#refs/tags/}
+          fi
 
       - name: Build & Zip
         run: |
@@ -65,4 +77,4 @@ jobs:
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_bucket: ${{ secrets.AWS_BUCKET }}
           source_dir: 'engine-aws-upload'
-          destination_dir: "./"
+          destination_dir: "./raw-engine-zips/"
