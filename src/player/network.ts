@@ -2,10 +2,13 @@ import {
     Player,
     Request,
     RequestPhase,
-    PlaneSelectRequest,
     PlaneSelectResponse,
+    SteerInputRequest,
+    SteerInputResponse,
+    HelloWorldRequest,
+    HelloWorldResponse,
 } from "."
-import { PlaneType } from "../plane"
+import { PlaneId, PlaneType } from "../plane"
 import SocketServer from "../util/socket-server"
 
 export default class NetworkPlayer extends Player {
@@ -24,11 +27,43 @@ export default class NetworkPlayer extends Player {
         return this.server.read()
     }
 
-    async getPlanesSelected(
-        request: PlaneSelectRequest
-    ): Promise<PlaneSelectResponse> {
+    async sendHelloWorld(
+        request: HelloWorldRequest
+    ): Promise<HelloWorldResponse> {
+        await this.send({
+            phase: RequestPhase.HELLO_WORLD,
+            data: request,
+        })
+
+        return JSON.parse(await this.receive())
+    }
+
+    async getPlanesSelected(): Promise<PlaneSelectResponse> {
         await this.send({
             phase: RequestPhase.PLANE_SELECT,
+            data: null,
+        })
+
+        const got = await this.receive()
+
+        const rawResponse = JSON.parse(got)
+
+        console.log(rawResponse)
+
+        const response = new Map<PlaneType, number>()
+
+        for (const [key, value] of Object.entries(rawResponse)) {
+            response.set(key as PlaneType, value as number)
+        }
+
+        return response
+    }
+
+    async getSteerInput(
+        request: SteerInputRequest
+    ): Promise<SteerInputResponse> {
+        await this.send({
+            phase: RequestPhase.STEER_INPUT,
             data: request,
         })
 
@@ -36,10 +71,10 @@ export default class NetworkPlayer extends Player {
 
         const rawResponse = JSON.parse(got)
 
-        const response = new Map<PlaneType, number>()
+        const response = new Map<PlaneId, number>()
 
         for (const [key, value] of Object.entries(rawResponse)) {
-            response.set(key as PlaneType, value as number)
+            response.set(key, value as number)
         }
 
         return response
