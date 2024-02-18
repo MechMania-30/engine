@@ -29,5 +29,5 @@ export const PLANE_SPAWN_SPREAD = 2.5 // How far apart planes from same team spa
 
 // Plane type => plane stats
 export const PLANE_STATS: Record<PlaneType, PlaneStats> = {
-    [PlaneType.BASIC]: new PlaneStats(4.5),
+    [PlaneType.BASIC]: new PlaneStats(4.5, 30),
 }

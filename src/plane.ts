@@ -25,8 +25,11 @@ export enum Direction {
     SOUTHEAST = 315,
 }
 
+export type PlaneId = string
+
 export class Plane {
     constructor(
+        readonly id: PlaneId,
         readonly team: string,
         readonly type: PlaneType,
         public position: Position,
@@ -35,5 +38,8 @@ export class Plane {
 }
 
 export class PlaneStats {
-    constructor(readonly speed: number) {}
+    constructor(
+        readonly speed: number,
+        readonly turnSpeed: number
+    ) {}
 }
