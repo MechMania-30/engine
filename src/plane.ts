@@ -30,7 +30,7 @@ export type PlaneId = string
 export class Plane {
     constructor(
         readonly id: PlaneId,
-        readonly team: string,
+        readonly team: number,
         readonly type: PlaneType,
         public position: Position,
         public angle: number // Angle that faces [0, 360) so 0 = East, 90 = North, etc.

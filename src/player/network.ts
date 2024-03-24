@@ -5,7 +5,6 @@ import {
     PlaneSelectResponse,
     SteerInputRequest,
     SteerInputResponse,
-    HelloWorldRequest,
     HelloWorldResponse,
 } from "."
 import { PlaneId, PlaneType } from "../plane"
@@ -13,7 +12,7 @@ import SocketServer from "../util/socket-server"
 
 export default class NetworkPlayer extends Player {
     constructor(
-        team: string,
+        team: number,
         private readonly server: SocketServer
     ) {
         super(team)
@@ -27,12 +26,12 @@ export default class NetworkPlayer extends Player {
         return this.server.read()
     }
 
-    async sendHelloWorld(
-        request: HelloWorldRequest
-    ): Promise<HelloWorldResponse> {
+    async sendHelloWorld(): Promise<HelloWorldResponse> {
         await this.send({
             phase: RequestPhase.HELLO_WORLD,
-            data: request,
+            data: {
+                team: this.team,
+            },
         })
 
         return JSON.parse(await this.receive())

@@ -15,7 +15,7 @@ const USAGE = `Proper usage: npm start [team0port] [team1port]
     DEBUG = Set to 1 to enable debug output
 `
 
-async function setupPlayerForPort(team: string, port: number): Promise<Player> {
+async function setupPlayerForPort(team: number, port: number): Promise<Player> {
     if (port <= 0) {
         console.log(`Created computer for team ${team}`)
         return new ComputerPlayer(team)
@@ -57,12 +57,12 @@ async function main() {
         throw new Error("Team 1 port must be a number!")
     }
 
-    const [player0, player1] = await Promise.all([
-        setupPlayerForPort(CONFIG.TEAMS.ZERO, team0Port),
-        setupPlayerForPort(CONFIG.TEAMS.ONE, team1Port),
+    const players = await Promise.all([
+        setupPlayerForPort(0, team0Port),
+        setupPlayerForPort(1, team1Port),
     ])
 
-    const game = new Game(player0, player1)
+    const game = new Game(players)
 
     for (let i = 0; i <= CONFIG.TURNS; i++) {
         console.log(`Start turn ${i}`)
