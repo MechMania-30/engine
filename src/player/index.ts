@@ -1,11 +1,9 @@
 import { Plane, PlaneId, PlaneType } from "../plane"
 
 export abstract class Player {
-    constructor(readonly team: string) {}
+    constructor(readonly team: number) {}
 
-    abstract sendHelloWorld(
-        request: HelloWorldRequest
-    ): Promise<HelloWorldResponse>
+    abstract sendHelloWorld(): Promise<HelloWorldResponse>
     abstract getPlanesSelected(): Promise<PlaneSelectResponse>
     abstract getSteerInput(
         request: SteerInputRequest
@@ -27,7 +25,7 @@ export type Request =
     | ({ phase: RequestPhase.FINISH } & { data: string })
 
 export interface HelloWorldRequest {
-    team: string
+    team: number
 }
 export interface HelloWorldResponse {
     good: boolean
