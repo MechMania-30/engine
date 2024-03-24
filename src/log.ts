@@ -1,3 +1,4 @@
+import { PLANE_STATS } from "./config"
 import { Plane } from "./plane"
 
 export interface LogTurn {
@@ -5,6 +6,7 @@ export interface LogTurn {
 }
 
 export class Log {
+    private planeStats = PLANE_STATS
     private turns: LogTurn[] = []
     constructor() {}
 

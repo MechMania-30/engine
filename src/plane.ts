@@ -40,6 +40,8 @@ export class Plane {
 export class PlaneStats {
     constructor(
         readonly speed: number,
-        readonly turnSpeed: number
+        readonly turnSpeed: number,
+        readonly attackSpreadAngle: number,
+        readonly attackRange: number
     ) {}
 }
