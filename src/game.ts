@@ -71,7 +71,7 @@ export default class Game {
             }
 
             const dx = Math.cos(rad(plane.angle)) * stats.speed
-            const dy = -Math.sin(rad(plane.angle)) * stats.speed
+            const dy = Math.sin(rad(plane.angle)) * stats.speed
             plane.position.add(new Position(dx, dy))
         }
 

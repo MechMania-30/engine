@@ -6,11 +6,11 @@ export const TURNS = 500 // Number of turns
 // Spawns for each team
 export const SPAWNS: { position: Position; angle: number }[] = [
     {
-        position: new Position(MAP_SIZE / 2, 5),
+        position: new Position(0, MAP_SIZE / 2 - 5),
         angle: Direction.SOUTH,
     },
     {
-        position: new Position(MAP_SIZE / 2, MAP_SIZE - 5),
+        position: new Position(0, -MAP_SIZE / 2 + 5),
         angle: Direction.NORTH,
     },
 ]
