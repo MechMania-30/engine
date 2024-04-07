@@ -5,7 +5,7 @@ import {
     SteerInputResponse,
     HelloWorldResponse,
 } from "."
-import { PlaneType } from "../plane"
+import { PlaneType } from "../plane/data"
 
 export default class ComputerPlayer extends Player {
     async sendHelloWorld(): Promise<HelloWorldResponse> {

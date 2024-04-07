@@ -1,7 +1,9 @@
-import { Plane, PlaneId, PlaneType, Position } from "./plane"
+import { Plane, PlaneId } from "./plane/plane"
+import { Position } from "./plane/position"
+import { PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
-import rad from "./util/rad"
+import rad, { deg } from "./util/rad"
 import { Log } from "./log"
 import deepCopy from "./util/deepCopy"
 
@@ -59,6 +61,9 @@ export default class Game {
         )
 
         for (const plane of this.planes) {
+            if (plane.health == 0) {
+                break
+            }
             const stats = CONFIG.PLANE_STATS[plane.type]
 
             const thisTeamSteerInput = steerInputResponses[plane.team]
@@ -69,10 +74,60 @@ export default class Game {
             while (plane.angle < 0) {
                 plane.angle += 360
             }
+        }
 
-            const dx = Math.cos(rad(plane.angle)) * stats.speed
-            const dy = Math.sin(rad(plane.angle)) * stats.speed
-            plane.position.add(new Position(dx, dy))
+        const alreadyAttackedPairs: Set<string> = new Set()
+
+        for (let i = 0; i < CONFIG.ATTACK_STEPS; i++) {
+            for (const plane of this.planes) {
+                if (plane.health == 0) {
+                    break
+                }
+                const stats = CONFIG.PLANE_STATS[plane.type]
+
+                for (const attacking of this.planes) {
+                    if (attacking.health == 0) {
+                        break
+                    }
+                    if (plane.team == attacking.team) {
+                        break
+                    }
+                    const diffVector = new Position(
+                        attacking.position.x - plane.position.x,
+                        attacking.position.y - plane.position.y
+                    )
+                    const distance = diffVector.magnitude()
+
+                    if (distance > stats.attackRange) {
+                        break
+                    }
+
+                    const diffVectorAngle = deg(
+                        Math.atan2(diffVector.y, diffVector.x)
+                    )
+
+                    const diffAngle = plane.angle - diffVectorAngle
+
+                    if (Math.abs(diffAngle) > stats.attackSpreadAngle) {
+                        break
+                    }
+
+                    const key = `${plane.id} attacks ${attacking.id}`
+                    if (alreadyAttackedPairs.has(key)) {
+                        break
+                    }
+                    alreadyAttackedPairs.add(key)
+
+                    attacking.health -= 1
+
+                    console.log(key)
+                }
+
+                const SCALE_FACTOR = stats.speed * (1 / CONFIG.ATTACK_STEPS)
+                const dx = Math.cos(rad(plane.angle)) * SCALE_FACTOR
+                const dy = Math.sin(rad(plane.angle)) * SCALE_FACTOR
+                plane.position.add(new Position(dx, dy))
+            }
         }
 
         this.log.addTurn({

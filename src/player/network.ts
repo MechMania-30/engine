@@ -7,7 +7,8 @@ import {
     SteerInputResponse,
     HelloWorldResponse,
 } from "."
-import { PlaneId, PlaneType } from "../plane"
+import { PlaneType } from "../plane/data"
+import { PlaneId } from "../plane/plane"
 import SocketServer from "../util/socket-server"
 
 export default class NetworkPlayer extends Player {
