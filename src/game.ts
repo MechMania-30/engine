@@ -3,7 +3,7 @@ import { Position } from "./plane/position"
 import { PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
-import rad, { deg } from "./util/rad"
+import { rad, deg, degDiff } from "./util/angle"
 import { Log } from "./log"
 import deepCopy from "./util/deepCopy"
 
@@ -62,7 +62,7 @@ export default class Game {
 
         for (const plane of this.planes) {
             if (plane.health == 0) {
-                break
+                continue
             }
             const stats = CONFIG.PLANE_STATS[plane.type]
 
@@ -78,55 +78,78 @@ export default class Game {
 
         const alreadyAttackedPairs: Set<string> = new Set()
 
+        // Run a set of interpolated steps for each turn
         for (let i = 0; i < CONFIG.ATTACK_STEPS; i++) {
+            // First, move planes for this step
             for (const plane of this.planes) {
                 if (plane.health == 0) {
-                    break
+                    continue
                 }
                 const stats = CONFIG.PLANE_STATS[plane.type]
-
-                for (const attacking of this.planes) {
-                    if (attacking.health == 0) {
-                        break
-                    }
-                    if (plane.team == attacking.team) {
-                        break
-                    }
-                    const diffVector = new Position(
-                        attacking.position.x - plane.position.x,
-                        attacking.position.y - plane.position.y
-                    )
-                    const distance = diffVector.magnitude()
-
-                    if (distance > stats.attackRange) {
-                        break
-                    }
-
-                    const diffVectorAngle = deg(
-                        Math.atan2(diffVector.y, diffVector.x)
-                    )
-
-                    const diffAngle = plane.angle - diffVectorAngle
-
-                    if (Math.abs(diffAngle) > stats.attackSpreadAngle) {
-                        break
-                    }
-
-                    const key = `${plane.id} attacks ${attacking.id}`
-                    if (alreadyAttackedPairs.has(key)) {
-                        break
-                    }
-                    alreadyAttackedPairs.add(key)
-
-                    attacking.health -= 1
-
-                    console.log(key)
-                }
 
                 const SCALE_FACTOR = stats.speed * (1 / CONFIG.ATTACK_STEPS)
                 const dx = Math.cos(rad(plane.angle)) * SCALE_FACTOR
                 const dy = Math.sin(rad(plane.angle)) * SCALE_FACTOR
                 plane.position.add(new Position(dx, dy))
+            }
+
+            // Then, check for any intersections for attacks
+            const damaged: Plane[] = []
+            for (const plane of this.planes) {
+                if (plane.health == 0) {
+                    continue
+                }
+                const stats = CONFIG.PLANE_STATS[plane.type]
+
+                for (const attacking of this.planes) {
+                    // Shouldn't attack dead planes
+                    if (attacking.health == 0) {
+                        continue
+                    }
+
+                    // Shouldn't attack our team
+                    if (plane.team == attacking.team) {
+                        continue
+                    }
+                    const diffVector = new Position(
+                        attacking.position.x - plane.position.x,
+                        attacking.position.y - plane.position.y
+                    )
+
+                    // Cone checks: radius
+                    const distance = diffVector.magnitude()
+                    if (distance > stats.attackRange) {
+                        continue
+                    }
+
+                    // Cone checks: angle
+                    const diffVectorAngle = deg(
+                        Math.atan2(diffVector.y, diffVector.x)
+                    )
+
+                    const diffAngle = degDiff(plane.angle, diffVectorAngle)
+
+                    if (diffAngle > stats.attackSpreadAngle) {
+                        continue
+                    }
+
+                    // Verify hasn't already been attacked by this plane this turn
+                    const key = `${plane.id} attacks ${attacking.id}`
+                    if (alreadyAttackedPairs.has(key)) {
+                        continue
+                    }
+                    alreadyAttackedPairs.add(key)
+
+                    damaged.push(attacking)
+
+                    console.log(key)
+                }
+            }
+
+            // Apply damage after, so we can have plane <-> plane attacks where both die
+            for (const damage of damaged) {
+                if (damage.health == 0) continue
+                damage.health -= 1
             }
         }
 
