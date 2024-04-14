@@ -1,5 +1,5 @@
 import { PLANE_STATS } from "./config"
-import { Plane } from "./plane"
+import { Plane } from "./plane/plane"
 
 export interface LogTurn {
     planes: Plane[]

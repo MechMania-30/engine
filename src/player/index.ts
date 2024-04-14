@@ -1,4 +1,5 @@
-import { Plane, PlaneId, PlaneType } from "../plane"
+import { PlaneType } from "../plane/data"
+import { Plane, PlaneId } from "../plane/plane"
 
 export abstract class Player {
     constructor(readonly team: number) {}
