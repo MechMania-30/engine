@@ -9,12 +9,20 @@ import deepCopy from "./util/deepCopy"
 
 export default class Game {
     private turn: number = 0
-    private planes: Plane[] = []
+    private planes: Map<string, Plane> = new Map()
     public log: Log = new Log()
 
     constructor(private players: Player[]) {}
 
-    async createPlanes(player: Player, selected: PlaneSelectResponse) {
+    alivePlanes() {
+        return new Map(
+            [...this.planes.entries()].filter(
+                ([_id, plane]) => plane.health > 0
+            )
+        )
+    }
+
+    createPlanes(player: Player, selected: PlaneSelectResponse) {
         const toPlace: PlaneType[] = []
         for (const [type, count] of selected.entries()) {
             for (let i = 0; i < count; i++) {
@@ -26,18 +34,26 @@ export default class Game {
             CONFIG.SPAWNS[player.team]
 
         for (let i = 0; i < toPlace.length; i++) {
-            const id: PlaneId = this.planes.length.toString()
+            const id: PlaneId = this.planes.size.toString()
             const type = toPlace[i]
             const offset = (i - toPlace.length / 2) * CONFIG.PLANE_SPAWN_SPREAD
             const pos = new Position(spawnPosition.x + offset, spawnPosition.y)
-            this.planes.push(new Plane(id, player.team, type, pos, spawnAngle))
+            this.planes.set(
+                id,
+                new Plane(id, player.team, type, pos, spawnAngle)
+            )
         }
     }
 
     async runTurn() {
         if (this.turn == 0) {
             await Promise.all(
-                this.players.map((player) => player.sendHelloWorld())
+                this.players.map((player) =>
+                    player.sendHelloWorld({
+                        team: player.team,
+                        stats: CONFIG.PLANE_STATS,
+                    })
+                )
             )
 
             const planesSelectedResponses = await Promise.all(
@@ -53,14 +69,16 @@ export default class Game {
             return // No action for turn 0
         }
 
-        const steerInputRequest: SteerInputRequest = this.planes
+        const steerInputRequest: SteerInputRequest = Object.fromEntries(
+            this.alivePlanes().entries()
+        )
         const steerInputResponses = await Promise.all(
             this.players.map((player) =>
                 player.getSteerInput(steerInputRequest)
             )
         )
 
-        for (const plane of this.planes) {
+        for (const plane of this.planes.values()) {
             if (plane.health == 0) {
                 continue
             }
@@ -81,7 +99,7 @@ export default class Game {
         // Run a set of interpolated steps for each turn
         for (let i = 0; i < CONFIG.ATTACK_STEPS; i++) {
             // First, move planes for this step
-            for (const plane of this.planes) {
+            for (const plane of this.planes.values()) {
                 if (plane.health == 0) {
                     continue
                 }
@@ -95,13 +113,13 @@ export default class Game {
 
             // Then, check for any intersections for attacks
             const damaged: Plane[] = []
-            for (const plane of this.planes) {
+            for (const plane of this.planes.values()) {
                 if (plane.health == 0) {
                     continue
                 }
                 const stats = CONFIG.PLANE_STATS[plane.type]
 
-                for (const attacking of this.planes) {
+                for (const attacking of this.planes.values()) {
                     // Shouldn't attack dead planes
                     if (attacking.health == 0) {
                         continue
@@ -154,7 +172,7 @@ export default class Game {
         }
 
         this.log.addTurn({
-            planes: deepCopy(this.planes),
+            planes: deepCopy(Object.fromEntries(this.planes)),
         })
         this.turn += 1
     }

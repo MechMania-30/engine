@@ -6,6 +6,7 @@ import {
     SteerInputRequest,
     SteerInputResponse,
     HelloWorldResponse,
+    HelloWorldRequest,
 } from "."
 import { PlaneType } from "../plane/data"
 import { PlaneId } from "../plane/plane"
@@ -27,12 +28,12 @@ export default class NetworkPlayer extends Player {
         return this.server.read()
     }
 
-    async sendHelloWorld(): Promise<HelloWorldResponse> {
+    async sendHelloWorld(
+        request: HelloWorldRequest
+    ): Promise<HelloWorldResponse> {
         await this.send({
             phase: RequestPhase.HELLO_WORLD,
-            data: {
-                team: this.team,
-            },
+            data: request,
         })
 
         return JSON.parse(await this.receive())
