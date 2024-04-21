@@ -154,7 +154,7 @@ export default class Game {
         }
 
         this.log.addTurn({
-            planes: deepCopy(this.planes),
+            planes: deepCopy(this.planes.filter((plane) => plane.health > 0)),
         })
         this.turn += 1
     }
