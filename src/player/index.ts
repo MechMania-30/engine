@@ -1,10 +1,12 @@
-import { PlaneType } from "../plane/data"
+import { PlaneStats, PlaneType } from "../plane/data"
 import { Plane, PlaneId } from "../plane/plane"
 
 export abstract class Player {
     constructor(readonly team: number) {}
 
-    abstract sendHelloWorld(): Promise<HelloWorldResponse>
+    abstract sendHelloWorld(
+        request: HelloWorldRequest
+    ): Promise<HelloWorldResponse>
     abstract getPlanesSelected(): Promise<PlaneSelectResponse>
     abstract getSteerInput(
         request: SteerInputRequest
@@ -27,6 +29,7 @@ export type Request =
 
 export interface HelloWorldRequest {
     team: number
+    stats: Record<PlaneType, PlaneStats>
 }
 export interface HelloWorldResponse {
     good: boolean
@@ -34,5 +37,5 @@ export interface HelloWorldResponse {
 
 export type PlaneSelectResponse = Map<PlaneType, number>
 
-export type SteerInputRequest = Plane[]
+export type SteerInputRequest = Record<string, Plane>
 export type SteerInputResponse = Map<PlaneId, number>

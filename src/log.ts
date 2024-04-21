@@ -2,7 +2,7 @@ import { PLANE_STATS } from "./config"
 import { Plane } from "./plane/plane"
 
 export interface LogTurn {
-    planes: Plane[]
+    planes: Record<string, Plane>
 }
 
 export class Log {
