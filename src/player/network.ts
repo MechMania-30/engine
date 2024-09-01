@@ -8,6 +8,7 @@ import {
     HelloWorldResponse,
     HelloWorldRequest,
 } from "."
+import * as CONFIG from "../config"
 import { PlaneType } from "../plane/data"
 import { PlaneId } from "../plane/plane"
 import SocketServer from "../util/socket-server"
@@ -15,17 +16,44 @@ import SocketServer from "../util/socket-server"
 export default class NetworkPlayer extends Player {
     constructor(
         team: number,
-        private readonly server: SocketServer
+        private readonly server: SocketServer,
+        private disconnectStrikes: number = 0
     ) {
         super(team)
     }
 
     private send(request: Request) {
+        if (!this.server.connected()) {
+            return
+        }
         return this.server.write(JSON.stringify(request))
     }
 
-    private receive() {
-        return this.server.read()
+    private async receive() {
+        if (!this.server.connected()) {
+            return "{}"
+        }
+        const read = await this.server.read()
+        if (read === "") {
+            this.disconnectStrikes += 1
+            if (this.disconnectStrikes >= CONFIG.TIMEOUT_DISCONNECT_STRIKES) {
+                console.log(this.disconnectStrikes)
+                await this.finish(
+                    "Your bot failed to respond in time (is your bot broken?) and was disconnected"
+                )
+                console.error(
+                    `[Validation] Player ${this.team} failed to respond ${this.disconnectStrikes} times in a row and was disconnected due to broken bot`
+                )
+                return "{}"
+            } else {
+                console.error(
+                    `[Validation] Player ${this.team} timed out, strike ${this.disconnectStrikes}/${CONFIG.TIMEOUT_DISCONNECT_STRIKES}`
+                )
+            }
+            return "{}"
+        }
+        this.disconnectStrikes = 0
+        return read
     }
 
     async sendHelloWorld(
