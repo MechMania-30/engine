@@ -7,6 +7,21 @@ import { rad, deg, degDiff } from "./util/angle"
 import { Log, Stats } from "./log"
 import deepCopy from "./util/deepCopy"
 
+export enum DamageEventType {
+    PLANE_ATTACK = "PLANE_ATTACK",
+    BORDER = "BORDER",
+    COLLISION = "COLLISION",
+}
+
+export interface DamageEvent {
+    turn: number
+    attacked: string
+    by?: string
+    damage: number
+    type: DamageEventType
+    dead: boolean
+}
+
 export default class Game {
     public turn: number = 0
     private planes: Map<string, Plane> = new Map()
@@ -30,10 +45,11 @@ export default class Game {
     }
 
     private checkPlaneAttackIntersectionResult(
+        turn: number,
         plane: Plane,
         attacking: Plane,
         alreadyAttackedPairs: Set<string>
-    ): number | undefined {
+    ): DamageEvent | undefined {
         const stats = CONFIG.PLANE_STATS[plane.type]
         if (plane.health == 0) {
             return
@@ -58,7 +74,14 @@ export default class Game {
         // Collision check
         if (distance <= CONFIG.COLLISION_RADIUS) {
             console.log(`${plane.id} collides with ${attacking.id}`)
-            return attacking.health
+            return {
+                attacked: attacking.id,
+                damage: attacking.health,
+                by: plane.id,
+                dead: true,
+                turn,
+                type: DamageEventType.COLLISION,
+            }
         }
 
         // Cone checks: radius
@@ -84,7 +107,14 @@ export default class Game {
 
         console.log(key)
 
-        return 1
+        return {
+            attacked: attacking.id,
+            by: plane.id,
+            damage: 1,
+            dead: false,
+            type: DamageEventType.PLANE_ATTACK,
+            turn,
+        }
     }
 
     private computeStats(): Stats {
@@ -232,6 +262,7 @@ export default class Game {
         // Run a set of interpolated steps for each turn
         const alreadyAttackedPairs: Set<string> = new Set()
         for (let i = 0; i < CONFIG.ATTACK_STEPS; i++) {
+            const subTurn = this.turn + i / CONFIG.ATTACK_STEPS
             // First, move planes for this step
             for (const plane of this.planes.values()) {
                 if (plane.health == 0) {
@@ -247,32 +278,48 @@ export default class Game {
                 // Check in bounds
                 if (!this.inBounds(plane.position)) {
                     console.log(`${plane.id} collides with border`)
+                    this.log.addDamageEvent({
+                        turn: subTurn,
+                        type: DamageEventType.BORDER,
+                        attacked: plane.id,
+                        damage: plane.health,
+                        dead: true,
+                    })
                     plane.health = 0
                 }
             }
 
             // Then, check for any intersections for attacks
-            const damaged: { plane: Plane; by: number; damage: number }[] = []
+            const damaged: DamageEvent[] = []
             for (const plane of this.planes.values()) {
                 for (const attacking of this.planes.values()) {
                     const result = this.checkPlaneAttackIntersectionResult(
+                        subTurn,
                         plane,
                         attacking,
                         alreadyAttackedPairs
                     )
                     if (result !== undefined) {
-                        damaged.push({
-                            plane: attacking,
-                            by: plane.team,
-                            damage: result,
-                        })
+                        damaged.push(result)
                     }
                 }
             }
 
             // Apply damage after, so we can have plane <-> plane attacks where both die
-            for (const { plane, by, damage } of damaged) {
-                this.players[by].damage += damage
+            for (const { attacked, by, damage, turn, type } of damaged) {
+                const plane = this.planes.get(attacked)!
+
+                if (by) {
+                    this.players[this.planes.get(by)!.team].damage += damage
+                    this.log.addDamageEvent({
+                        turn,
+                        type,
+                        attacked,
+                        by,
+                        damage,
+                        dead: plane.health - damage <= 0,
+                    })
+                }
 
                 if (plane.health == 0) continue
                 plane.health = Math.max(0, plane.health - damage)

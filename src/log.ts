@@ -1,4 +1,5 @@
 import { PLANE_STATS } from "./config"
+import { DamageEvent } from "./game"
 import { Plane } from "./plane/plane"
 
 export interface LogTurn {
@@ -13,10 +14,15 @@ export interface Stats {
 
 export class Log {
     private planeStats = PLANE_STATS
+    private damageEvents: DamageEvent[] = []
     private turns: LogTurn[] = []
     private output: string = ""
 
     constructor() {}
+
+    addDamageEvent(event: DamageEvent) {
+        this.damageEvents.push(event)
+    }
 
     addTurn(turn: LogTurn) {
         this.turns.push(turn)
@@ -28,6 +34,7 @@ export class Log {
                 wins,
                 stats,
                 planeStats: this.planeStats,
+                damageEvents: this.damageEvents,
                 turns: this.turns,
             },
             undefined,
