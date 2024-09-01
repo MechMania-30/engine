@@ -1,6 +1,5 @@
 import net from "net"
-
-const TIMEOUT = 5000
+import { RESPONSE_TIMEOUT } from "../config"
 
 export default class SocketServer {
     private server: net.Server | undefined
@@ -17,17 +16,19 @@ export default class SocketServer {
         })
     }
 
+    public connected(): boolean {
+        return !!this.socket
+    }
+
     public async write(data: string): Promise<void> {
-        if (!this.socket) {
-            console.log("Socket is closed!")
-            return
+        if (!this.connected()) {
+            throw new Error("Cannot write to closed socket")
         }
 
         return new Promise((resolve) => {
             const timeout = setTimeout(() => {
-                console.log("Write timed out!")
                 resolve()
-            }, TIMEOUT)
+            }, RESPONSE_TIMEOUT)
 
             this.socket!.write(`${data}\n`, () => {
                 clearTimeout(timeout)
@@ -37,16 +38,14 @@ export default class SocketServer {
     }
 
     public async read(): Promise<string> {
-        if (!this.socket) {
-            console.log("Socket is closed!")
-            return ""
+        if (!this.connected()) {
+            throw new Error("Cannot read from closed socket")
         }
 
         return new Promise((resolve) => {
             const timeout = setTimeout(() => {
-                console.log("Read timed out!")
                 resolve("")
-            }, TIMEOUT)
+            }, RESPONSE_TIMEOUT)
 
             this.socket!.on("data", (data) => {
                 this.buffer += data.toString()
