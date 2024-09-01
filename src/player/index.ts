@@ -2,7 +2,10 @@ import { PlaneStats, PlaneType } from "../plane/data"
 import { Plane, PlaneId } from "../plane/plane"
 
 export abstract class Player {
-    constructor(readonly team: number) {}
+    constructor(
+        readonly team: number,
+        public damage: number = 0
+    ) {}
 
     abstract sendHelloWorld(
         request: HelloWorldRequest
@@ -11,7 +14,7 @@ export abstract class Player {
     abstract getSteerInput(
         request: SteerInputRequest
     ): Promise<SteerInputResponse>
-    abstract finish(): Promise<void>
+    abstract finish(disconnectMessage: string): Promise<void>
 }
 
 export enum RequestPhase {

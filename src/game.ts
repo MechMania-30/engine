@@ -8,7 +8,7 @@ import { Log } from "./log"
 import deepCopy from "./util/deepCopy"
 
 export default class Game {
-    private turn: number = 0
+    public turn: number = 0
     private planes: Map<string, Plane> = new Map()
     public log: Log = new Log()
 
@@ -45,7 +45,8 @@ export default class Game {
         }
     }
 
-    async runTurn() {
+    // Runs a turn, returns true if the game should continue, false if it has ended
+    async runTurn(): Promise<boolean> {
         if (this.turn == 0) {
             await Promise.all(
                 this.players.map((player) =>
@@ -66,7 +67,7 @@ export default class Game {
             console.log("Selected planes: ", this.planes)
 
             this.turn = 1
-            return // No action for turn 0
+            return true // No action for turn 0
         }
 
         const steerInputRequest: SteerInputRequest = Object.fromEntries(
@@ -159,6 +160,7 @@ export default class Game {
                     alreadyAttackedPairs.add(key)
 
                     damaged.push(attacking)
+                    this.players[plane.team].damage += 1
 
                     console.log(key)
                 }
@@ -171,13 +173,101 @@ export default class Game {
             }
         }
 
+        // Log turn
         this.log.addTurn({
             planes: deepCopy(Object.fromEntries(this.planes)),
         })
+
+        // Check for game condition
+        const remainingPlaneScores = this.players.map((player) =>
+            [...this.planes.values()]
+                .filter(
+                    (plane) => plane.team === player.team && plane.health > 0
+                )
+                .reduce(
+                    (prev, curr) => prev + CONFIG.PLANE_STATS[curr.type].cost,
+                    0
+                )
+        )
+
+        const deadTeams = remainingPlaneScores.filter(
+            (score) => score === 0
+        ).length
+        const gameOver =
+            this.turn >= CONFIG.TURNS || deadTeams >= this.players.length - 1
+
+        if (gameOver) {
+            this.finish(remainingPlaneScores)
+            return false
+        }
+
+        // Prepare for next turn
         this.turn += 1
+
+        return true
     }
 
-    async finish() {
-        await Promise.all(this.players.map((player) => player.finish()))
+    private async finish(remainingPlaneScores: number[]) {
+        // Compute stats
+        const totalSpends = this.players.map((player) =>
+            [...this.planes.values()]
+                .filter((plane) => plane.team === player.team)
+                .reduce(
+                    (prev, curr) => prev + CONFIG.PLANE_STATS[curr.type].cost,
+                    0
+                )
+        )
+        const dealtDamages = this.players.map((player) => player.damage)
+
+        // Create tiebreakers (highest is best)
+        const tiebreakers = [
+            remainingPlaneScores,
+            totalSpends.map((value) => -value), // negative because we want lowest
+            dealtDamages,
+        ]
+
+        // Go through each tiebreaker, narrowing players in the running
+        let inTheRunning = [...this.players]
+        for (const tiebreaker of tiebreakers) {
+            const best = Math.max(...tiebreaker)
+            inTheRunning = inTheRunning.filter(
+                (player) => tiebreaker[player.team] === best
+            )
+
+            if (inTheRunning.length === 1) {
+                break
+            }
+        }
+
+        // Split win among tied players
+        const wins = this.players.map((player) =>
+            inTheRunning.includes(player) ? 1 / inTheRunning.length : 0
+        )
+
+        // Finalize log
+        this.log.finish(wins, {
+            totalSpends,
+            dealtDamages,
+            remainingPlaneScores,
+        })
+
+        // Finish connections
+        await Promise.all(
+            this.players.map((player) =>
+                player.finish(
+                    `You ${
+                        wins[player.team] === 0
+                            ? "lost"
+                            : wins[player.team] === 1
+                            ? "won"
+                            : "tied"
+                    }!\nStats:\n  - ${
+                        remainingPlaneScores[player.team]
+                    } remaining plane score\n  - Spent ${
+                        totalSpends[player.team]
+                    } points\n  - Dealt ${dealtDamages[player.team]} damage`
+                )
+            )
+        )
     }
 }

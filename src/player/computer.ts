@@ -30,7 +30,7 @@ export default class ComputerPlayer extends Player {
         return new Map()
     }
 
-    async finish(): Promise<void> {
+    async finish(_disconnectMessage: string): Promise<void> {
         // Do nothing
     }
 }
