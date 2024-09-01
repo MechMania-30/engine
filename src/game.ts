@@ -4,7 +4,7 @@ import { PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
 import { rad, deg, degDiff } from "./util/angle"
-import { Log } from "./log"
+import { Log, Stats } from "./log"
 import deepCopy from "./util/deepCopy"
 
 export default class Game {
@@ -14,7 +14,7 @@ export default class Game {
 
     constructor(private players: Player[]) {}
 
-    alivePlanes() {
+    private alivePlanes() {
         return new Map(
             [...this.planes.entries()].filter(
                 ([_id, plane]) => plane.health > 0
@@ -22,14 +22,99 @@ export default class Game {
         )
     }
 
-    inBounds(position: Position) {
+    private inBounds(position: Position) {
         return (
             Math.abs(position.x) < CONFIG.MAP_SIZE / 2 &&
             Math.abs(position.y) < CONFIG.MAP_SIZE / 2
         )
     }
 
-    createPlanes(player: Player, selected: PlaneSelectResponse) {
+    private checkPlaneAttackIntersectionResult(
+        plane: Plane,
+        attacking: Plane,
+        alreadyAttackedPairs: Set<string>
+    ): number | undefined {
+        const stats = CONFIG.PLANE_STATS[plane.type]
+        if (plane.health == 0) {
+            return
+        }
+
+        // Shouldn't attack dead planes
+        if (attacking.health == 0) {
+            return
+        }
+
+        // Shouldn't attack our team
+        if (plane.team == attacking.team) {
+            return
+        }
+        const diffVector = new Position(
+            attacking.position.x - plane.position.x,
+            attacking.position.y - plane.position.y
+        )
+
+        const distance = diffVector.magnitude()
+
+        // Collision check
+        if (distance <= CONFIG.COLLISION_RADIUS) {
+            console.log(`${plane.id} collides with ${attacking.id}`)
+            return attacking.health
+        }
+
+        // Cone checks: radius
+        if (distance > stats.attackRange) {
+            return
+        }
+
+        // Cone checks: angle
+        const diffVectorAngle = deg(Math.atan2(diffVector.y, diffVector.x))
+
+        const diffAngle = degDiff(plane.angle, diffVectorAngle)
+
+        if (diffAngle > stats.attackSpreadAngle) {
+            return
+        }
+
+        // Verify hasn't already been attacked by this plane this turn
+        const key = `${plane.id} attacks ${attacking.id}`
+        if (alreadyAttackedPairs.has(key)) {
+            return
+        }
+        alreadyAttackedPairs.add(key)
+
+        console.log(key)
+
+        return 1
+    }
+
+    private computeStats(): Stats {
+        const remainingPlaneScores = this.players.map((player) =>
+            [...this.alivePlanes().values()]
+                .filter((plane) => plane.team === player.team)
+                .reduce(
+                    (prev, curr) => prev + CONFIG.PLANE_STATS[curr.type].cost,
+                    0
+                )
+        )
+
+        const totalSpends = this.players.map((player) =>
+            [...this.planes.values()]
+                .filter((plane) => plane.team === player.team)
+                .reduce(
+                    (prev, curr) => prev + CONFIG.PLANE_STATS[curr.type].cost,
+                    0
+                )
+        )
+        const dealtDamages = this.players.map((player) => player.damage)
+
+        return {
+            remainingPlaneScores,
+            totalSpends,
+            dealtDamages,
+        }
+    }
+
+    private createPlanes(player: Player, selected: PlaneSelectResponse) {
         const toPlace: PlaneType[] = []
         for (const [type, count] of selected.entries()) {
             for (let i = 0; i < count; i++) {
@@ -52,31 +137,29 @@ export default class Game {
         }
     }
 
-    // Runs a turn, returns true if the game should continue, false if it has ended
-    async runTurn(): Promise<boolean> {
-        if (this.turn == 0) {
-            await Promise.all(
-                this.players.map((player) =>
-                    player.sendHelloWorld({
-                        team: player.team,
-                        stats: CONFIG.PLANE_STATS,
-                    })
-                )
+    // Requests player plane choices, validates them, then sets up new planes
+    private async initPlayerPlanes() {
+        await Promise.all(
+            this.players.map((player) =>
+                player.sendHelloWorld({
+                    team: player.team,
+                    stats: CONFIG.PLANE_STATS,
+                })
             )
+        )
 
-            const planesSelectedResponses = await Promise.all(
-                this.players.map((player) => player.getPlanesSelected())
-            )
+        const planesSelectedResponses = await Promise.all(
+            this.players.map((player) => player.getPlanesSelected())
+        )
 
-            planesSelectedResponses.forEach((selected, team) => {
-                this.createPlanes(this.players[team], selected)
-            })
-            console.log("Selected planes: ", this.planes)
+        planesSelectedResponses.forEach((selected, team) => {
+            this.createPlanes(this.players[team], selected)
+        })
+        console.log("Selected planes: ", this.planes)
+    }
 
-            this.turn = 1
-            return true // No action for turn 0
-        }
-
+    // Requests player steering per plane, validates them, and applies new steering angle
+    private async steerPlayerPlanes() {
         const steerInputRequest: SteerInputRequest = Object.fromEntries(
             this.alivePlanes().entries()
         )
@@ -101,10 +184,22 @@ export default class Game {
                 plane.angle += 360
             }
         }
+    }
 
-        const alreadyAttackedPairs: Set<string> = new Set()
+    // Runs a turn, returns true if the game should continue, false if it has ended
+    async runTurn(): Promise<boolean> {
+        if (this.turn == 0) {
+            await this.initPlayerPlanes()
+
+            this.turn = 1
+            return true // No action for turn 0
+        }
+
+        // Steer planes
+        await this.steerPlayerPlanes()
 
         // Run a set of interpolated steps for each turn
+        const alreadyAttackedPairs: Set<string> = new Set()
         for (let i = 0; i < CONFIG.ATTACK_STEPS; i++) {
             // First, move planes for this step
             for (const plane of this.planes.values()) {
@@ -120,6 +215,7 @@ export default class Game {
 
                 // Check in bounds
                 if (!this.inBounds(plane.position)) {
+                    console.log(`${plane.id} collides with border`)
                     plane.health = 0
                 }
             }
@@ -127,72 +223,19 @@ export default class Game {
             // Then, check for any intersections for attacks
             const damaged: { plane: Plane; by: number; damage: number }[] = []
             for (const plane of this.planes.values()) {
-                if (plane.health == 0) {
-                    continue
-                }
-                const stats = CONFIG.PLANE_STATS[plane.type]
-
                 for (const attacking of this.planes.values()) {
-                    if (plane.health == 0) {
-                        continue
-                    }
-
-                    // Shouldn't attack dead planes
-                    if (attacking.health == 0) {
-                        continue
-                    }
-
-                    // Shouldn't attack our team
-                    if (plane.team == attacking.team) {
-                        continue
-                    }
-                    const diffVector = new Position(
-                        attacking.position.x - plane.position.x,
-                        attacking.position.y - plane.position.y
+                    const result = this.checkPlaneAttackIntersectionResult(
+                        plane,
+                        attacking,
+                        alreadyAttackedPairs
                     )
-
-                    const distance = diffVector.magnitude()
-
-                    // Collision check
-                    if (distance <= CONFIG.COLLISION_RADIUS) {
+                    if (result !== undefined) {
                         damaged.push({
                             plane: attacking,
                             by: plane.team,
-                            damage: attacking.health,
+                            damage: result,
                         })
-                        continue
                     }
-
-                    // Cone checks: radius
-                    if (distance > stats.attackRange) {
-                        continue
-                    }
-
-                    // Cone checks: angle
-                    const diffVectorAngle = deg(
-                        Math.atan2(diffVector.y, diffVector.x)
-                    )
-
-                    const diffAngle = degDiff(plane.angle, diffVectorAngle)
-
-                    if (diffAngle > stats.attackSpreadAngle) {
-                        continue
-                    }
-
-                    // Verify hasn't already been attacked by this plane this turn
-                    const key = `${plane.id} attacks ${attacking.id}`
-                    if (alreadyAttackedPairs.has(key)) {
-                        continue
-                    }
-                    alreadyAttackedPairs.add(key)
-
-                    damaged.push({
-                        plane: attacking,
-                        by: plane.team,
-                        damage: 1,
-                    })
-
-                    console.log(key)
                 }
             }
 
@@ -211,25 +254,16 @@ export default class Game {
         })
 
         // Check for game condition
-        const remainingPlaneScores = this.players.map((player) =>
-            [...this.planes.values()]
-                .filter(
-                    (plane) => plane.team === player.team && plane.health > 0
-                )
-                .reduce(
-                    (prev, curr) => prev + CONFIG.PLANE_STATS[curr.type].cost,
-                    0
-                )
-        )
+        const stats = this.computeStats()
 
-        const deadTeams = remainingPlaneScores.filter(
+        const deadTeams = stats.remainingPlaneScores.filter(
             (score) => score === 0
         ).length
         const gameOver =
             this.turn >= CONFIG.TURNS || deadTeams >= this.players.length - 1
 
         if (gameOver) {
-            this.finish(remainingPlaneScores)
+            this.finish(stats)
             return false
         }
 
@@ -239,17 +273,8 @@ export default class Game {
         return true
     }
 
-    private async finish(remainingPlaneScores: number[]) {
-        // Compute stats
-        const totalSpends = this.players.map((player) =>
-            [...this.planes.values()]
-                .filter((plane) => plane.team === player.team)
-                .reduce(
-                    (prev, curr) => prev + CONFIG.PLANE_STATS[curr.type].cost,
-                    0
-                )
-        )
-        const dealtDamages = this.players.map((player) => player.damage)
+    private async finish(stats: Stats) {
+        const { remainingPlaneScores, totalSpends, dealtDamages } = stats
 
         // Create tiebreakers (highest is best)
         const tiebreakers = [
@@ -277,11 +302,7 @@ export default class Game {
         )
 
         // Finalize log
-        this.log.finish(wins, {
-            totalSpends,
-            dealtDamages,
-            remainingPlaneScores,
-        })
+        this.log.finish(wins, stats)
 
         // Finish connections
         await Promise.all(
