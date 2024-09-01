@@ -81,10 +81,10 @@ export default class NetworkPlayer extends Player {
         return response
     }
 
-    async finish(): Promise<void> {
+    async finish(disconnectMessage: string): Promise<void> {
         await this.send({
             phase: RequestPhase.FINISH,
-            data: "",
+            data: disconnectMessage,
         })
 
         this.server.close()

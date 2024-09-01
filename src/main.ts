@@ -6,7 +6,6 @@ import NetworkPlayer from "./player/network"
 import SocketServer from "./util/socket-server"
 import { mkdir } from "fs/promises"
 import path from "path"
-import * as CONFIG from "./config"
 
 const USAGE = `Proper usage: npm start [team0port] [team1port]
 
@@ -64,12 +63,11 @@ async function main() {
 
     const game = new Game(players)
 
-    for (let i = 0; i <= CONFIG.TURNS; i++) {
-        console.log(`Start turn ${i}`)
-        await game.runTurn()
+    let continues = true
+    while (continues) {
+        console.log(`Start turn ${game.turn}`)
+        continues = await game.runTurn()
     }
-
-    await game.finish()
 
     const OUTPUT =
         process.env["OUTPUT"] ||

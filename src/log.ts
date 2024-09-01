@@ -5,21 +5,37 @@ export interface LogTurn {
     planes: Record<string, Plane>
 }
 
+export interface Stats {
+    totalSpends: number[]
+    remainingPlaneScores: number[]
+    dealtDamages: number[]
+}
+
 export class Log {
     private planeStats = PLANE_STATS
     private turns: LogTurn[] = []
-    private wins = [0, 0]
+    private output: string = ""
+
     constructor() {}
 
     addTurn(turn: LogTurn) {
         this.turns.push(turn)
     }
 
-    addWin(team: number) {
-        this.wins[team] += 1
+    finish(wins: number[], stats: Stats) {
+        this.output = JSON.stringify(
+            {
+                wins,
+                stats,
+                planeStats: this.planeStats,
+                turns: this.turns,
+            },
+            undefined,
+            "\t"
+        )
     }
 
     toString(): string {
-        return JSON.stringify(this, undefined, "\t")
+        return this.output
     }
 }
