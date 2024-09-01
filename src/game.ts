@@ -22,6 +22,13 @@ export default class Game {
         )
     }
 
+    inBounds(position: Position) {
+        return (
+            Math.abs(position.x) < CONFIG.MAP_SIZE / 2 &&
+            Math.abs(position.y) < CONFIG.MAP_SIZE / 2
+        )
+    }
+
     createPlanes(player: Player, selected: PlaneSelectResponse) {
         const toPlace: PlaneType[] = []
         for (const [type, count] of selected.entries()) {
@@ -110,10 +117,15 @@ export default class Game {
                 const dx = Math.cos(rad(plane.angle)) * SCALE_FACTOR
                 const dy = Math.sin(rad(plane.angle)) * SCALE_FACTOR
                 plane.position.add(new Position(dx, dy))
+
+                // Check in bounds
+                if (!this.inBounds(plane.position)) {
+                    plane.health = 0
+                }
             }
 
             // Then, check for any intersections for attacks
-            const damaged: Plane[] = []
+            const damaged: { plane: Plane; by: number; damage: number }[] = []
             for (const plane of this.planes.values()) {
                 if (plane.health == 0) {
                     continue
@@ -121,6 +133,10 @@ export default class Game {
                 const stats = CONFIG.PLANE_STATS[plane.type]
 
                 for (const attacking of this.planes.values()) {
+                    if (plane.health == 0) {
+                        continue
+                    }
+
                     // Shouldn't attack dead planes
                     if (attacking.health == 0) {
                         continue
@@ -135,8 +151,19 @@ export default class Game {
                         attacking.position.y - plane.position.y
                     )
 
-                    // Cone checks: radius
                     const distance = diffVector.magnitude()
+
+                    // Collision check
+                    if (distance <= CONFIG.COLLISION_RADIUS) {
+                        damaged.push({
+                            plane: attacking,
+                            by: plane.team,
+                            damage: attacking.health,
+                        })
+                        continue
+                    }
+
+                    // Cone checks: radius
                     if (distance > stats.attackRange) {
                         continue
                     }
@@ -159,17 +186,22 @@ export default class Game {
                     }
                     alreadyAttackedPairs.add(key)
 
-                    damaged.push(attacking)
-                    this.players[plane.team].damage += 1
+                    damaged.push({
+                        plane: attacking,
+                        by: plane.team,
+                        damage: 1,
+                    })
 
                     console.log(key)
                 }
             }
 
             // Apply damage after, so we can have plane <-> plane attacks where both die
-            for (const damage of damaged) {
-                if (damage.health == 0) continue
-                damage.health -= 1
+            for (const { plane, by, damage } of damaged) {
+                this.players[by].damage += damage
+
+                if (plane.health == 0) continue
+                plane.health = Math.max(0, plane.health - damage)
             }
         }
 
