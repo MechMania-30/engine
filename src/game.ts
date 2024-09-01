@@ -114,26 +114,45 @@ export default class Game {
         }
     }
 
-    private createPlanes(player: Player, selected: PlaneSelectResponse) {
-        const toPlace: PlaneType[] = []
-        for (const [type, count] of selected.entries()) {
+    private parseSelectedPlanes(
+        team: number,
+        selected: PlaneSelectResponse
+    ): PlaneType[] {
+        const requested: PlaneType[] = []
+        let totalSpent = 0
+        for (const [selection, count] of selected) {
+            const stats = CONFIG.PLANE_STATS[selection]
+            if (!stats) {
+                console.error(
+                    `[Validation] Player ${team} requested invalid plane type ${selection}`
+                )
+                continue
+            }
             for (let i = 0; i < count; i++) {
-                toPlace.push(type)
+                const newTotalSpent = totalSpent + stats.cost
+                if (newTotalSpent > CONFIG.MAX_SPEND) {
+                    console.error(
+                        `[Validation] Player ${team} attempted to spend over max spend ${CONFIG.MAX_SPEND} (${newTotalSpent}), locked plane choice to before over max spend`
+                    )
+                    return requested
+                }
+                requested.push(PlaneType[selection])
+                totalSpent = newTotalSpent
             }
         }
+        return requested
+    }
 
+    private createPlanes(team: number, toPlace: PlaneType[]) {
         const { position: spawnPosition, angle: spawnAngle } =
-            CONFIG.SPAWNS[player.team]
+            CONFIG.SPAWNS[team]
 
         for (let i = 0; i < toPlace.length; i++) {
             const id: PlaneId = this.planes.size.toString()
             const type = toPlace[i]
             const offset = (i - toPlace.length / 2) * CONFIG.PLANE_SPAWN_SPREAD
             const pos = new Position(spawnPosition.x + offset, spawnPosition.y)
-            this.planes.set(
-                id,
-                new Plane(id, player.team, type, pos, spawnAngle)
-            )
+            this.planes.set(id, new Plane(id, team, type, pos, spawnAngle))
         }
     }
 
@@ -153,7 +172,13 @@ export default class Game {
         )
 
         planesSelectedResponses.forEach((selected, team) => {
-            this.createPlanes(this.players[team], selected)
+            const selectedPlanes = this.parseSelectedPlanes(team, selected)
+            if (selectedPlanes.length === 0) {
+                console.error(
+                    `[Validation] Player ${team} failed to provide a plane selection and lost`
+                )
+            }
+            this.createPlanes(team, selectedPlanes)
         })
         console.log("Selected planes: ", this.planes)
     }
@@ -176,8 +201,14 @@ export default class Game {
             const stats = CONFIG.PLANE_STATS[plane.type]
 
             const thisTeamSteerInput = steerInputResponses[plane.team]
-            let steer = thisTeamSteerInput.get(plane.id) ?? 0
-            steer = Math.max(Math.min(steer, 1), -1)
+            const rawSteer = thisTeamSteerInput.get(plane.id) ?? 0
+            const steer = Math.max(Math.min(rawSteer, 1), -1)
+
+            if (rawSteer !== steer) {
+                console.error(
+                    `[Validation] Player ${plane.team} sent invalid steer ${rawSteer} for plane ${plane.id}, corrected to ${steer}`
+                )
+            }
 
             plane.angle = (plane.angle + stats.turnSpeed * steer) % 360
             while (plane.angle < 0) {

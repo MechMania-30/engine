@@ -3,6 +3,7 @@ import { Direction, Position } from "./plane/position"
 
 export const MAP_SIZE = 100 // Size of map
 export const TURNS = 500 // Number of turns
+export const MAX_SPEND = 1000 // The maximum points that can be spent on planes
 export const ATTACK_STEPS = 15 // Number of steps per attack detection
 export const COLLISION_RADIUS = 2 // Distance at which planes collide and both explode
 
