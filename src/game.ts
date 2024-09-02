@@ -6,6 +6,7 @@ import * as CONFIG from "./config"
 import { rad, deg, degDiff } from "./util/angle"
 import { Log, Stats } from "./log"
 import deepCopy from "./util/deepCopy"
+import { Logger } from "./logger"
 
 export enum DamageEventType {
     PLANE_ATTACK = "PLANE_ATTACK",
@@ -25,9 +26,11 @@ export interface DamageEvent {
 export default class Game {
     public turn: number = 0
     private planes: Map<string, Plane> = new Map()
-    public log: Log = new Log()
 
-    constructor(private players: Player[]) {}
+    constructor(
+        private players: Player[],
+        private log: Log
+    ) {}
 
     private alivePlanes() {
         return new Map(
@@ -73,7 +76,6 @@ export default class Game {
 
         // Collision check
         if (distance <= CONFIG.COLLISION_RADIUS) {
-            console.log(`${plane.id} collides with ${attacking.id}`)
             return {
                 attacked: attacking.id,
                 damage: attacking.health,
@@ -104,8 +106,6 @@ export default class Game {
             return
         }
         alreadyAttackedPairs.add(key)
-
-        console.log(key)
 
         return {
             attacked: attacking.id,
@@ -153,16 +153,18 @@ export default class Game {
         for (const [selection, count] of selected) {
             const stats = CONFIG.PLANE_STATS[selection]
             if (!stats) {
-                console.error(
-                    `[Validation] Player ${team} requested invalid plane type ${selection}`
+                this.log.logValidationError(
+                    team,
+                    `requested invalid plane type ${selection}`
                 )
                 continue
             }
             for (let i = 0; i < count; i++) {
                 const newTotalSpent = totalSpent + stats.cost
                 if (newTotalSpent > CONFIG.MAX_SPEND) {
-                    console.error(
-                        `[Validation] Player ${team} attempted to spend over max spend ${CONFIG.MAX_SPEND} (${newTotalSpent}), locked plane choice to before over max spend`
+                    this.log.logValidationError(
+                        team,
+                        `attempted to spend over max spend ${CONFIG.MAX_SPEND} (${newTotalSpent}), locked plane choice to before over max spend`
                     )
                     return requested
                 }
@@ -204,13 +206,13 @@ export default class Game {
         planesSelectedResponses.forEach((selected, team) => {
             const selectedPlanes = this.parseSelectedPlanes(team, selected)
             if (selectedPlanes.length === 0) {
-                console.error(
-                    `[Validation] Player ${team} failed to provide a plane selection and lost`
+                this.log.logValidationError(
+                    team,
+                    "failed to provide a plane selection and lost"
                 )
             }
             this.createPlanes(team, selectedPlanes)
         })
-        console.log("Selected planes: ", this.planes)
     }
 
     // Requests player steering per plane, validates them, and applies new steering angle
@@ -235,8 +237,9 @@ export default class Game {
             const steer = Math.max(Math.min(rawSteer, 1), -1)
 
             if (rawSteer !== steer) {
-                console.error(
-                    `[Validation] Player ${plane.team} sent invalid steer ${rawSteer} for plane ${plane.id}, corrected to ${steer}`
+                this.log.logValidationError(
+                    plane.team,
+                    `sent invalid steer ${rawSteer} for plane ${plane.id}, corrected to ${steer}`
                 )
             }
 
@@ -249,6 +252,7 @@ export default class Game {
 
     // Runs a turn, returns true if the game should continue, false if it has ended
     async runTurn(): Promise<boolean> {
+        Logger.setTurn(this.turn)
         if (this.turn == 0) {
             await this.initPlayerPlanes()
 
@@ -277,7 +281,6 @@ export default class Game {
 
                 // Check in bounds
                 if (!this.inBounds(plane.position)) {
-                    console.log(`${plane.id} collides with border`)
                     this.log.addDamageEvent({
                         turn: subTurn,
                         type: DamageEventType.BORDER,

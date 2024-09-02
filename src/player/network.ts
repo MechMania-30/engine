@@ -9,6 +9,7 @@ import {
     HelloWorldRequest,
 } from "."
 import * as CONFIG from "../config"
+import { Log } from "../log"
 import { PlaneType } from "../plane/data"
 import { PlaneId } from "../plane/plane"
 import SocketServer from "../util/socket-server"
@@ -17,6 +18,7 @@ export default class NetworkPlayer extends Player {
     constructor(
         team: number,
         private readonly server: SocketServer,
+        private log: Log,
         private disconnectStrikes: number = 0
     ) {
         super(team)
@@ -36,19 +38,19 @@ export default class NetworkPlayer extends Player {
         const read = await this.server.read()
         if (read === "") {
             this.disconnectStrikes += 1
+            this.log.logValidationError(
+                this.team,
+                `timed out, strike ${this.disconnectStrikes}/${CONFIG.TIMEOUT_DISCONNECT_STRIKES}`
+            )
             if (this.disconnectStrikes >= CONFIG.TIMEOUT_DISCONNECT_STRIKES) {
-                console.log(this.disconnectStrikes)
                 await this.finish(
                     "Your bot failed to respond in time (is your bot broken?) and was disconnected"
                 )
-                console.error(
-                    `[Validation] Player ${this.team} failed to respond ${this.disconnectStrikes} times in a row and was disconnected due to broken bot`
+                this.log.logValidationError(
+                    this.team,
+                    `failed to respond ${this.disconnectStrikes} times in a row and was disconnected due to broken bot`
                 )
                 return "{}"
-            } else {
-                console.error(
-                    `[Validation] Player ${this.team} timed out, strike ${this.disconnectStrikes}/${CONFIG.TIMEOUT_DISCONNECT_STRIKES}`
-                )
             }
             return "{}"
         }
@@ -76,8 +78,6 @@ export default class NetworkPlayer extends Player {
         const got = await this.receive()
 
         const rawResponse = JSON.parse(got)
-
-        console.log(rawResponse)
 
         const response = new Map<PlaneType, number>()
 
