@@ -43,19 +43,23 @@ export default class SocketServer {
         }
 
         return new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-                resolve("")
-            }, RESPONSE_TIMEOUT)
-
-            this.socket!.on("data", (data) => {
+            const handler = (data: Buffer) => {
                 this.buffer += data.toString()
                 if (this.buffer.includes("\n")) {
                     clearTimeout(timeout)
                     const message = this.buffer.trim()
                     this.buffer = ""
+                    this.socket!.removeListener("data", handler)
                     resolve(message)
                 }
-            })
+            }
+
+            const timeout = setTimeout(() => {
+                this.socket!.removeListener("data", handler)
+                resolve("")
+            }, RESPONSE_TIMEOUT)
+
+            this.socket!.on("data", handler)
         })
     }
 
