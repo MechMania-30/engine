@@ -3,7 +3,7 @@ import { Position } from "./plane/position"
 import { PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
-import { rad, deg, degDiff } from "./util/angle"
+import { rad, deg, degDiff, normalizeAngle } from "./util/angle"
 import { Log, Stats } from "./log"
 import deepCopy from "./util/deepCopy"
 import { Logger } from "./logger"
@@ -216,7 +216,9 @@ export default class Game {
     }
 
     // Requests player steering per plane, validates them, and applies new steering angle
-    private async steerPlayerPlanes() {
+    private async steerPlayerPlanes(): Promise<Record<string, number>> {
+        const angleDiffs: Record<string, number> = {}
+
         const steerInputRequest: SteerInputRequest = Object.fromEntries(
             this.alivePlanes().entries()
         )
@@ -243,11 +245,11 @@ export default class Game {
                 )
             }
 
-            plane.angle = (plane.angle + stats.turnSpeed * steer) % 360
-            while (plane.angle < 0) {
-                plane.angle += 360
-            }
+            const thisDiff = stats.turnSpeed * steer
+            angleDiffs[plane.id] = thisDiff
         }
+
+        return angleDiffs
     }
 
     // Runs a turn, returns true if the game should continue, false if it has ended
@@ -261,7 +263,7 @@ export default class Game {
         }
 
         // Steer planes
-        await this.steerPlayerPlanes()
+        const angleDiffs = await this.steerPlayerPlanes()
 
         // Run a set of interpolated steps for each turn
         const alreadyAttackedPairs: Set<string> = new Set()
@@ -274,7 +276,12 @@ export default class Game {
                 }
                 const stats = CONFIG.PLANE_STATS[plane.type]
 
-                const SCALE_FACTOR = stats.speed * (1 / CONFIG.ATTACK_STEPS)
+                const DELTA = 1 / CONFIG.ATTACK_STEPS
+                plane.angle = normalizeAngle(
+                    plane.angle + angleDiffs[plane.id] * DELTA
+                )
+
+                const SCALE_FACTOR = stats.speed * DELTA
                 const dx = Math.cos(rad(plane.angle)) * SCALE_FACTOR
                 const dy = Math.sin(rad(plane.angle)) * SCALE_FACTOR
                 plane.position.add(new Position(dx, dy))

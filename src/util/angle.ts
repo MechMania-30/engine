@@ -20,3 +20,12 @@ export function degDiff(deg1: number, deg2: number): number {
 
     return Math.abs(deg1 - deg2)
 }
+
+// Takes an angle and normalizes it to [0, 360)
+export function normalizeAngle(angle: number) {
+    let normalized = angle % 360
+    while (normalized < 0) {
+        normalized += 360
+    }
+    return normalized
+}
