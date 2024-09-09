@@ -3,7 +3,7 @@ import { Position } from "./plane/position"
 import { PlaneStats, PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
-import { deg, degDiff } from "./util/angle"
+import { deg, degDiff, rad } from "./util/angle"
 import { Log, Stats } from "./log"
 import deepCopy from "./util/deepCopy"
 import { Logger } from "./logger"
@@ -258,8 +258,8 @@ export default class Game {
         plane: Plane,
         stats: PlaneStats
     ): [number, number, number] {
-        const radius = stats.speed / ((Math.PI / 180) * angle_diff)
-        let init_angle_rad = (plane.angle * Math.PI) / 180
+        const radius = stats.speed / rad(angle_diff)
+        let init_angle_rad = rad(plane.angle)
         if (angle_diff == 0) {
             return [
                 stats.speed * Math.cos(init_angle_rad),
@@ -281,7 +281,7 @@ export default class Game {
         return [
             x * Math.abs(radius),
             y * Math.abs(radius),
-            (180 / Math.PI) * ((turn * stats.speed) / radius),
+            deg((turn * stats.speed) / radius),
         ]
     }
 
@@ -310,13 +310,6 @@ export default class Game {
                 const stats = CONFIG.PLANE_STATS[plane.type]
 
                 const DELTA = 1 / CONFIG.ATTACK_STEPS
-                // plane.angle = normalizeAngle(
-                //     plane.angle + angleDiffs[plane.id] * DELTA
-                // )
-
-                // const SCALE_FACTOR = stats.speed * DELTA
-                // const dx = Math.cos(rad(plane.angle)) * SCALE_FACTOR
-                // const dy = Math.sin(rad(plane.angle)) * SCALE_FACTOR
 
                 const change = this.interpolate(
                     DELTA,
