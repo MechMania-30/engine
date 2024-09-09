@@ -3,11 +3,10 @@ import { Position } from "./plane/position"
 import { PlaneStats, PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
-import { rad, deg, degDiff, normalizeAngle } from "./util/angle"
+import { deg, degDiff } from "./util/angle"
 import { Log, Stats } from "./log"
 import deepCopy from "./util/deepCopy"
 import { Logger } from "./logger"
-import { TupleType } from "typescript"
 
 export enum DamageEventType {
     PLANE_ATTACK = "PLANE_ATTACK",
@@ -253,26 +252,39 @@ export default class Game {
         return angleDiffs
     }
 
-
-    private interpolate(turn: number, angle_diff: number, plane: Plane, stats: PlaneStats): [number, number, number] {
-        const min_turn = stats.speed/(Math.PI * stats.turnSpeed/180)
-        const radius = stats.speed/((Math.PI / 180) * angle_diff)
-        var init_angle_rad = plane.angle * Math.PI/180
+    private interpolate(
+        turn: number,
+        angle_diff: number,
+        plane: Plane,
+        stats: PlaneStats
+    ): [number, number, number] {
+        const radius = stats.speed / ((Math.PI / 180) * angle_diff)
+        let init_angle_rad = (plane.angle * Math.PI) / 180
         if (angle_diff == 0) {
-            return [stats.speed * Math.cos(init_angle_rad), stats.speed * Math.sin(init_angle_rad), plane.angle]
-        }
-        else if (angle_diff < 0){
+            return [
+                stats.speed * Math.cos(init_angle_rad),
+                stats.speed * Math.sin(init_angle_rad),
+                plane.angle,
+            ]
+        } else if (angle_diff < 0) {
             init_angle_rad += Math.PI / 2
-        }
-        else {
+        } else {
             init_angle_rad -= Math.PI / 2
         }
-        const x = Math.cos(turn*(stats.speed/radius)+init_angle_rad) - Math.cos(init_angle_rad)
-        const y = Math.sin(turn*(stats.speed/radius)+init_angle_rad) - Math.sin(init_angle_rad)
-    
-        return [x*Math.abs(radius), y*Math.abs(radius), (180/Math.PI)*(turn*stats.speed/radius)]
-    } 
-    
+        const x =
+            Math.cos(turn * (stats.speed / radius) + init_angle_rad) -
+            Math.cos(init_angle_rad)
+        const y =
+            Math.sin(turn * (stats.speed / radius) + init_angle_rad) -
+            Math.sin(init_angle_rad)
+
+        return [
+            x * Math.abs(radius),
+            y * Math.abs(radius),
+            (180 / Math.PI) * ((turn * stats.speed) / radius),
+        ]
+    }
+
     // Runs a turn, returns true if the game should continue, false if it has ended
     async runTurn(): Promise<boolean> {
         Logger.setTurn(this.turn)
@@ -306,7 +318,12 @@ export default class Game {
                 // const dx = Math.cos(rad(plane.angle)) * SCALE_FACTOR
                 // const dy = Math.sin(rad(plane.angle)) * SCALE_FACTOR
 
-                const change = this.interpolate(DELTA, angleDiffs[plane.id], plane, stats)
+                const change = this.interpolate(
+                    DELTA,
+                    angleDiffs[plane.id],
+                    plane,
+                    stats
+                )
                 plane.position.add(new Position(change[0], change[1]))
                 plane.angle += change[2]
 
@@ -424,8 +441,8 @@ export default class Game {
                         wins[player.team] === 0
                             ? "lost"
                             : wins[player.team] === 1
-                            ? "won"
-                            : "tied"
+                              ? "won"
+                              : "tied"
                     }!\nStats:\n  - ${
                         remainingPlaneScores[player.team]
                     } remaining plane score\n  - Spent ${
