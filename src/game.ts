@@ -434,8 +434,8 @@ export default class Game {
                         wins[player.team] === 0
                             ? "lost"
                             : wins[player.team] === 1
-                              ? "won"
-                              : "tied"
+                            ? "won"
+                            : "tied"
                     }!\nStats:\n  - ${
                         remainingPlaneScores[player.team]
                     } remaining plane score\n  - Spent ${
