@@ -1,6 +1,6 @@
 import { Plane, PlaneId } from "./plane/plane"
 import { Position } from "./plane/position"
-import { PlaneStats, PlaneType } from "./plane/data"
+import { PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
 import { deg, degDiff, rad } from "./util/angle"
@@ -252,37 +252,47 @@ export default class Game {
         return angleDiffs
     }
 
-    private interpolate(
-        turn: number,
-        angle_diff: number,
+    // Given a plane, deltaSpeed, and deltaAngle, return the interpolated new position
+    private interpolatePlanePosition(
         plane: Plane,
-        stats: PlaneStats
-    ): [number, number, number] {
-        const radius = stats.speed / rad(angle_diff)
-        let init_angle_rad = rad(plane.angle)
-        if (angle_diff == 0) {
-            return [
-                stats.speed * Math.cos(init_angle_rad),
-                stats.speed * Math.sin(init_angle_rad),
-                plane.angle,
-            ]
-        } else if (angle_diff < 0) {
-            init_angle_rad += Math.PI / 2
-        } else {
-            init_angle_rad -= Math.PI / 2
-        }
-        const x =
-            Math.cos(turn * (stats.speed / radius) + init_angle_rad) -
-            Math.cos(init_angle_rad)
-        const y =
-            Math.sin(turn * (stats.speed / radius) + init_angle_rad) -
-            Math.sin(init_angle_rad)
+        deltaSpeed: number,
+        deltaAngle: number
+    ): Position {
+        const currAngle = rad(plane.angle)
+        const deltaAngleRad = rad(deltaAngle)
 
-        return [
-            x * Math.abs(radius),
-            y * Math.abs(radius),
-            deg((turn * stats.speed) / radius),
-        ]
+        // Handle straight shot case
+        if (deltaAngle === 0) {
+            return new Position(
+                deltaSpeed * Math.cos(currAngle),
+                deltaSpeed * Math.sin(currAngle)
+            )
+        }
+
+        // (2pi * radius) * (rad(angleDiff) / 2pi) = deltaSpeed
+        // radius * rad(angleDiff) = deltaSpeed
+        // radius = deltaSpeed / rad(angleDiff)
+        const radius = Math.abs(deltaSpeed / rad(deltaAngle))
+
+        // We do +/- PI/2 because we need to go towards the circle, and currAngle is tangent to the circle
+        // to get to the center of the circle
+        const fromCenterAngle =
+            currAngle + (deltaAngle > 0 ? -Math.PI / 2 : Math.PI / 2)
+
+        // Then, we subtract into the center (-Math.cos(fromCenterAngle))
+        // while adding from the center to our final position (+Math.cos(fromCenterAngle + deltaAngleRad))
+        // Essentially, fromCenterAngle is the angle from the center of the turn circle to our current position,
+        // so we rotate around the turn circle
+        const deltaPosition = new Position(
+            radius *
+                (Math.cos(fromCenterAngle + deltaAngleRad) -
+                    Math.cos(fromCenterAngle)),
+            radius *
+                (Math.sin(fromCenterAngle + deltaAngleRad) -
+                    Math.sin(fromCenterAngle))
+        )
+
+        return deltaPosition
     }
 
     // Runs a turn, returns true if the game should continue, false if it has ended
@@ -310,15 +320,14 @@ export default class Game {
                 const stats = CONFIG.PLANE_STATS[plane.type]
 
                 const DELTA = 1 / CONFIG.ATTACK_STEPS
-
-                const change = this.interpolate(
-                    DELTA,
-                    angleDiffs[plane.id],
+                const deltaAngle = DELTA * angleDiffs[plane.id]
+                const deltaPosition = this.interpolatePlanePosition(
                     plane,
-                    stats
+                    DELTA * stats.speed,
+                    deltaAngle
                 )
-                plane.position.add(new Position(change[0], change[1]))
-                plane.angle += change[2]
+                plane.angle += deltaAngle
+                plane.position.add(deltaPosition)
 
                 // Check in bounds
                 if (!this.inBounds(plane.position)) {
