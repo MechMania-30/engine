@@ -3,7 +3,7 @@ import { Position } from "./plane/position"
 import { PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
-import { rad, deg, degDiff, normalizeAngle } from "./util/angle"
+import { deg, degDiff, rad } from "./util/angle"
 import { Log, Stats } from "./log"
 import deepCopy from "./util/deepCopy"
 import { Logger } from "./logger"
@@ -252,6 +252,49 @@ export default class Game {
         return angleDiffs
     }
 
+    // Given a plane, deltaSpeed, and deltaAngle, return the interpolated new position
+    private interpolatePlanePosition(
+        plane: Plane,
+        deltaSpeed: number,
+        deltaAngle: number
+    ): Position {
+        const currAngle = rad(plane.angle)
+        const deltaAngleRad = rad(deltaAngle)
+
+        // Handle straight shot case
+        if (deltaAngle === 0) {
+            return new Position(
+                deltaSpeed * Math.cos(currAngle),
+                deltaSpeed * Math.sin(currAngle)
+            )
+        }
+
+        // (2pi * radius) * (rad(angleDiff) / 2pi) = deltaSpeed
+        // radius * rad(angleDiff) = deltaSpeed
+        // radius = deltaSpeed / rad(angleDiff)
+        const radius = Math.abs(deltaSpeed / rad(deltaAngle))
+
+        // We do +/- PI/2 because we need to go towards the circle, and currAngle is tangent to the circle
+        // to get to the center of the circle
+        const fromCenterAngle =
+            currAngle + (deltaAngle > 0 ? -Math.PI / 2 : Math.PI / 2)
+
+        // Then, we subtract into the center (-Math.cos(fromCenterAngle))
+        // while adding from the center to our final position (+Math.cos(fromCenterAngle + deltaAngleRad))
+        // Essentially, fromCenterAngle is the angle from the center of the turn circle to our current position,
+        // so we rotate around the turn circle
+        const deltaPosition = new Position(
+            radius *
+                (Math.cos(fromCenterAngle + deltaAngleRad) -
+                    Math.cos(fromCenterAngle)),
+            radius *
+                (Math.sin(fromCenterAngle + deltaAngleRad) -
+                    Math.sin(fromCenterAngle))
+        )
+
+        return deltaPosition
+    }
+
     // Runs a turn, returns true if the game should continue, false if it has ended
     async runTurn(): Promise<boolean> {
         Logger.setTurn(this.turn)
@@ -277,14 +320,14 @@ export default class Game {
                 const stats = CONFIG.PLANE_STATS[plane.type]
 
                 const DELTA = 1 / CONFIG.ATTACK_STEPS
-                plane.angle = normalizeAngle(
-                    plane.angle + angleDiffs[plane.id] * DELTA
+                const deltaAngle = DELTA * angleDiffs[plane.id]
+                const deltaPosition = this.interpolatePlanePosition(
+                    plane,
+                    DELTA * stats.speed,
+                    deltaAngle
                 )
-
-                const SCALE_FACTOR = stats.speed * DELTA
-                const dx = Math.cos(rad(plane.angle)) * SCALE_FACTOR
-                const dy = Math.sin(rad(plane.angle)) * SCALE_FACTOR
-                plane.position.add(new Position(dx, dy))
+                plane.angle += deltaAngle
+                plane.position.add(deltaPosition)
 
                 // Check in bounds
                 if (!this.inBounds(plane.position)) {
