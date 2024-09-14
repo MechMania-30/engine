@@ -1,5 +1,7 @@
+import { z } from "zod"
 import { PlaneStats, PlaneType } from "../plane/data"
-import { Plane, PlaneId } from "../plane/plane"
+import { Plane } from "../plane/plane"
+import { objectToMap } from "../util/schema"
 
 export abstract class Player {
     constructor(
@@ -34,11 +36,19 @@ export interface HelloWorldRequest {
     team: number
     stats: Record<PlaneType, PlaneStats>
 }
-export interface HelloWorldResponse {
-    good: boolean
-}
 
-export type PlaneSelectResponse = Map<PlaneType, number>
+export const HelloWorldResponseSchema = z.object({
+    good: z.literal(true),
+})
+export type HelloWorldResponse = z.infer<typeof HelloWorldResponseSchema>
+
+export const PlaneSelectResponseSchema = z
+    .record(z.nativeEnum(PlaneType), z.number())
+    .transform(objectToMap)
+export type PlaneSelectResponse = z.infer<typeof PlaneSelectResponseSchema>
 
 export type SteerInputRequest = Record<string, Plane>
-export type SteerInputResponse = Map<PlaneId, number>
+export const SteerInputResponseSchema = z
+    .record(z.string(), z.number())
+    .transform(objectToMap)
+export type SteerInputResponse = z.infer<typeof SteerInputResponseSchema>

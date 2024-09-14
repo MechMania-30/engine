@@ -1,3 +1,4 @@
+import { z } from "zod"
 import {
     Player,
     Request,
@@ -7,11 +8,12 @@ import {
     SteerInputResponse,
     HelloWorldResponse,
     HelloWorldRequest,
+    PlaneSelectResponseSchema,
+    HelloWorldResponseSchema,
+    SteerInputResponseSchema,
 } from "."
 import * as CONFIG from "../config"
 import { Log } from "../log"
-import { PlaneType } from "../plane/data"
-import { PlaneId } from "../plane/plane"
 import SocketServer from "../util/socket-server"
 
 export default class NetworkPlayer extends Player {
@@ -31,31 +33,72 @@ export default class NetworkPlayer extends Player {
         return this.server.write(JSON.stringify(request))
     }
 
-    private async receive() {
+    private async parseReceived<T, I>(
+        read: string,
+        schema: z.ZodType<T, z.ZodTypeDef, I>
+    ): Promise<{ valid: true; data: T } | { valid: false; error: string }> {
+        if (read === "") {
+            return {
+                valid: false,
+                error: `timed out`,
+            }
+        }
+
+        let data = undefined
+        try {
+            data = JSON.parse(read)
+        } catch (e) {
+            return {
+                valid: false,
+                error: `sent invalid json (${e})`,
+            }
+        }
+
+        const parseResult = schema.safeParse(data)
+        if (!parseResult.success) {
+            return {
+                valid: false,
+                error: `sent incorrectly formatted data (${parseResult.error.message})`,
+            }
+        }
+
+        return {
+            valid: true,
+            data: parseResult.data,
+        }
+    }
+
+    private async receive<T, I>(
+        schema: z.ZodType<T, z.ZodTypeDef, I>
+    ): Promise<T | undefined> {
         if (!this.server.connected()) {
-            return "{}"
+            return
         }
         const read = await this.server.read()
-        if (read === "") {
+
+        const result = await this.parseReceived(read, schema)
+        if (!result.valid) {
             this.disconnectStrikes += 1
             this.log.logValidationError(
                 this.team,
-                `timed out, strike ${this.disconnectStrikes}/${CONFIG.TIMEOUT_DISCONNECT_STRIKES}`
+                `${result.error}, strike ${this.disconnectStrikes}/${CONFIG.DISCONNECT_STRIKES}`
             )
-            if (this.disconnectStrikes >= CONFIG.TIMEOUT_DISCONNECT_STRIKES) {
+
+            if (this.disconnectStrikes >= CONFIG.DISCONNECT_STRIKES) {
                 await this.finish(
-                    "Your bot failed to respond in time (is your bot broken?) and was disconnected"
+                    `Your bot failed to respond ${this.disconnectStrikes} times in a row (is your bot broken?) and was disconnected`
                 )
                 this.log.logValidationError(
                     this.team,
                     `failed to respond ${this.disconnectStrikes} times in a row and was disconnected due to broken bot`
                 )
-                return "{}"
             }
-            return "{}"
+            return
         }
+
         this.disconnectStrikes = 0
-        return read
+
+        return result.data
     }
 
     async sendHelloWorld(
@@ -66,7 +109,8 @@ export default class NetworkPlayer extends Player {
             data: request,
         })
 
-        return JSON.parse(await this.receive())
+        const result = await this.receive(HelloWorldResponseSchema)
+        return result || { good: true }
     }
 
     async getPlanesSelected(): Promise<PlaneSelectResponse> {
@@ -75,17 +119,8 @@ export default class NetworkPlayer extends Player {
             data: null,
         })
 
-        const got = await this.receive()
-
-        const rawResponse = JSON.parse(got)
-
-        const response = new Map<PlaneType, number>()
-
-        for (const [key, value] of Object.entries(rawResponse)) {
-            response.set(key as PlaneType, value as number)
-        }
-
-        return response
+        const response = await this.receive(PlaneSelectResponseSchema)
+        return response || new Map()
     }
 
     async getSteerInput(
@@ -96,17 +131,8 @@ export default class NetworkPlayer extends Player {
             data: request,
         })
 
-        const got = await this.receive()
-
-        const rawResponse = JSON.parse(got)
-
-        const response = new Map<PlaneId, number>()
-
-        for (const [key, value] of Object.entries(rawResponse)) {
-            response.set(key, value as number)
-        }
-
-        return response
+        const result = await this.receive(SteerInputResponseSchema)
+        return result || new Map()
     }
 
     async finish(disconnectMessage: string): Promise<void> {

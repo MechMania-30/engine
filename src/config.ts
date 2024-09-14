@@ -7,8 +7,8 @@ export const MAX_SPEND = 1000 // The maximum points that can be spent on planes
 export const ATTACK_STEPS = 15 // Number of steps per attack detection
 export const COLLISION_RADIUS = 2 // Distance at which planes collide and both explode
 
-export const RESPONSE_TIMEOUT = 4_000 // The number of milliseconds allowed before a read/write times out
-export const TIMEOUT_DISCONNECT_STRIKES = 3 // The number of timeouts in a row before the client is disconnected and ignored
+export const RESPONSE_TIMEOUT = 2_500 // The number of milliseconds allowed before a read/write times out, gives a disconnect strike
+export const DISCONNECT_STRIKES = 3 // The number of disconnect strikes before the client is disconnected and ignored
 
 // Spawns for each team
 export const SPAWNS: { position: Position; angle: number }[] = [
