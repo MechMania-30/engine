@@ -79,17 +79,22 @@ async function main() {
         continues = await game.runTurn()
     }
 
+    console.log("Game ended!")
+
     const OUTPUT =
         process.env["OUTPUT"] ||
         `./gamelogs/gamelog_${
             new Date().toISOString().replace(/[-:]/g, "_").split(".")[0]
         }.json`
 
+    console.log(`Writing gamelog to ${OUTPUT}...`)
+
     await mkdir(path.dirname(OUTPUT), {
         recursive: true,
     })
 
     await writeFileSync(OUTPUT, log.toString())
+    console.log("Done")
 }
 
 main()

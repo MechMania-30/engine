@@ -82,6 +82,5 @@ export default class SocketServer {
         }
         this.server = undefined
         this.socket = undefined
-        console.log("Connection closed!")
     }
 }
