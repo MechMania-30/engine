@@ -28,7 +28,11 @@ async function setupPlayerForPort(
     console.log(`Waiting for connection from team ${team} on ${port}`)
     const server = new SocketServer()
     await server.connect(port)
-    console.log(`Connected to team ${team} on ${port}`)
+    if (server.connected()) {
+        console.log(`Connected to team ${team} on ${port}`)
+    } else {
+        console.error(`Failed to connect to team ${team} on ${port}`)
+    }
 
     return new NetworkPlayer(team, server, log)
 }

@@ -1,5 +1,5 @@
 import net from "net"
-import { RESPONSE_TIMEOUT } from "../config"
+import { INITIAL_RESPONSE_TIMEOUT, RESPONSE_TIMEOUT } from "../config"
 
 export default class SocketServer {
     private server: net.Server | undefined
@@ -7,12 +7,20 @@ export default class SocketServer {
     private buffer: string = ""
 
     async connect(port: number) {
-        this.server = await new Promise<net.Server>((res) => {
+        this.server = await new Promise((res) => {
+            let timeout: NodeJS.Timeout | undefined = undefined
+
             const server = net.createServer((socket) => {
                 this.socket = socket
+                clearTimeout(timeout)
                 res(server)
             })
             server.listen(port)
+
+            timeout = setTimeout(() => {
+                server.close()
+                res(undefined)
+            }, INITIAL_RESPONSE_TIMEOUT)
         })
     }
 
