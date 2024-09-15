@@ -180,7 +180,14 @@ export default class Game {
         for (let i = 0; i < toPlace.length; i++) {
             const id: PlaneId = this.planes.size.toString()
             const type = toPlace[i]
-            const offset = (i - toPlace.length / 2) * CONFIG.PLANE_SPAWN_SPREAD
+            const bounds = CONFIG.MAP_SIZE / 2 - 25
+            let offset = (i - toPlace.length / 2) * CONFIG.PLANE_SPAWN_SPREAD
+            while (offset >= bounds) {
+                offset -= bounds
+            }
+            while (offset < -bounds) {
+                offset += bounds
+            }
             const pos = new Position(spawnPosition.x + offset, spawnPosition.y)
             this.planes.set(id, new Plane(id, team, type, pos, spawnAngle))
         }
