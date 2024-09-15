@@ -53,7 +53,6 @@ export default class Game {
         attacking: Plane,
         alreadyAttackedPairs: Set<string>
     ): DamageEvent | undefined {
-        const stats = CONFIG.PLANE_STATS[plane.type]
         if (plane.health == 0) {
             return
         }
@@ -87,7 +86,7 @@ export default class Game {
         }
 
         // Cone checks: radius
-        if (distance > stats.attackRange) {
+        if (distance > plane.stats.attackRange) {
             return
         }
 
@@ -96,7 +95,7 @@ export default class Game {
 
         const diffAngle = degDiff(plane.angle, diffVectorAngle)
 
-        if (diffAngle > stats.attackSpreadAngle) {
+        if (diffAngle > plane.stats.attackSpreadAngle) {
             return
         }
 
@@ -110,7 +109,7 @@ export default class Game {
         return {
             attacked: attacking.id,
             by: plane.id,
-            damage: stats.attack,
+            damage: plane.stats.attack,
             dead: false,
             type: DamageEventType.PLANE_ATTACK,
             turn,
@@ -122,7 +121,9 @@ export default class Game {
             [...this.alivePlanes().values()]
                 .filter((plane) => plane.team === player.team)
                 .reduce(
-                    (prev, curr) => prev + CONFIG.PLANE_STATS[curr.type].cost,
+                    (prev, curr) =>
+                        prev +
+                        curr.stats.cost * (curr.health / curr.stats.maxHealth),
                     0
                 )
         )
@@ -130,10 +131,7 @@ export default class Game {
         const totalSpends = this.players.map((player) =>
             [...this.planes.values()]
                 .filter((plane) => plane.team === player.team)
-                .reduce(
-                    (prev, curr) => prev + CONFIG.PLANE_STATS[curr.type].cost,
-                    0
-                )
+                .reduce((prev, curr) => prev + curr.stats.cost, 0)
         )
         const dealtDamages = this.players.map((player) => player.damage)
 
@@ -194,7 +192,6 @@ export default class Game {
             this.players.map((player) =>
                 player.sendHelloWorld({
                     team: player.team,
-                    stats: CONFIG.PLANE_STATS,
                 })
             )
         )
@@ -232,8 +229,6 @@ export default class Game {
             if (plane.health == 0) {
                 continue
             }
-            const stats = CONFIG.PLANE_STATS[plane.type]
-
             const thisTeamSteerInput = steerInputResponses[plane.team]
             const rawSteer = thisTeamSteerInput.get(plane.id) ?? 0
             const steer = Math.max(Math.min(rawSteer, 1), -1)
@@ -245,7 +240,7 @@ export default class Game {
                 )
             }
 
-            const thisDiff = stats.turnSpeed * steer
+            const thisDiff = plane.stats.turnSpeed * steer
             angleDiffs[plane.id] = thisDiff
         }
 
@@ -317,13 +312,11 @@ export default class Game {
                 if (plane.health == 0) {
                     continue
                 }
-                const stats = CONFIG.PLANE_STATS[plane.type]
-
                 const DELTA = 1 / CONFIG.ATTACK_STEPS
                 const deltaAngle = DELTA * angleDiffs[plane.id]
                 const deltaPosition = this.interpolatePlanePosition(
                     plane,
-                    DELTA * stats.speed,
+                    DELTA * plane.stats.speed,
                     deltaAngle
                 )
                 plane.angle += deltaAngle

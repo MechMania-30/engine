@@ -21,7 +21,7 @@ export default class ComputerPlayer extends Player {
     async getPlanesSelected(): Promise<PlaneSelectResponse> {
         // Ask for a random number of basic planes
         const selectedPlanes: PlaneSelectResponse = new Map([
-            [PlaneType.BASIC, Math.floor(5 + Math.random() * 6)],
+            [PlaneType.STANDARD, Math.floor(3 + Math.random() * 2)],
         ])
 
         return selectedPlanes

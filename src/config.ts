@@ -28,7 +28,7 @@ export const PLANE_SPAWN_SPREAD = 2.5 // How far apart planes from same team spa
 export const PLANE_STATS: Record<PlaneType, PlaneStats> = {
     [PlaneType.STANDARD]: {
         cost: 200,
-        health: 20,
+        maxHealth: 20,
         turnSpeed: 15,
         speed: 2,
         attack: 1,
@@ -37,7 +37,7 @@ export const PLANE_STATS: Record<PlaneType, PlaneStats> = {
     },
     [PlaneType.FLYING_FORTRESS]: {
         cost: 300,
-        health: 30,
+        maxHealth: 30,
         turnSpeed: 10,
         speed: 1,
         attack: 1,
@@ -46,7 +46,7 @@ export const PLANE_STATS: Record<PlaneType, PlaneStats> = {
     },
     [PlaneType.THUNDERBIRD]: {
         cost: 200,
-        health: 10,
+        maxHealth: 10,
         turnSpeed: 15,
         speed: 2.5,
         attack: 1,
@@ -55,7 +55,7 @@ export const PLANE_STATS: Record<PlaneType, PlaneStats> = {
     },
     [PlaneType.SCRAPYARD_RESCUE]: {
         cost: 100,
-        health: 5,
+        maxHealth: 5,
         turnSpeed: 10,
         speed: 1.5,
         attack: 1,
@@ -64,7 +64,7 @@ export const PLANE_STATS: Record<PlaneType, PlaneStats> = {
     },
     [PlaneType.PIGEON]: {
         cost: 10,
-        health: 1,
+        maxHealth: 1,
         turnSpeed: 30,
         speed: 0.5,
         attack: 0,

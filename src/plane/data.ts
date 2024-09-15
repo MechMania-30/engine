@@ -1,6 +1,6 @@
 export interface PlaneStats {
     readonly cost: number
-    readonly health: number
+    readonly maxHealth: number
     readonly turnSpeed: number
     readonly speed: number
     readonly attack: number

@@ -34,7 +34,6 @@ export type Request =
 
 export interface HelloWorldRequest {
     team: number
-    stats: Record<PlaneType, PlaneStats>
 }
 
 export const HelloWorldResponseSchema = z.object({
