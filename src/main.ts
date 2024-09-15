@@ -7,6 +7,7 @@ import SocketServer from "./util/socket-server"
 import { mkdir } from "fs/promises"
 import path from "path"
 import { Log } from "./log"
+import { exit } from "process"
 
 const USAGE = `Proper usage: npm start [team0port] [team1port]
 
@@ -39,7 +40,8 @@ async function setupPlayerForPort(
 
 async function main() {
     if (process.argv.length != 4) {
-        throw new Error(USAGE)
+        console.error(USAGE)
+        exit(2)
     }
 
     let team0Port: number | undefined = undefined
@@ -51,7 +53,8 @@ async function main() {
     }
 
     if (team0Port === undefined || Number.isNaN(team0Port)) {
-        throw new Error("Team 0 port must be a number!")
+        console.error("Team 0 port must be a number!")
+        exit(2)
     }
 
     let team1Port: number | undefined = undefined
@@ -62,7 +65,8 @@ async function main() {
     }
 
     if (team1Port === undefined || Number.isNaN(team1Port)) {
-        throw new Error("Team 1 port must be a number!")
+        console.error("Team 1 port must be a number!")
+        exit(2)
     }
 
     const log = new Log()
