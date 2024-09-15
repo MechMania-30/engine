@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { PlaneStats, PlaneType } from "../plane/data"
+import { PlaneType } from "../plane/data"
 import { Plane } from "../plane/plane"
 import { objectToMap } from "../util/schema"
 
