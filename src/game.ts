@@ -110,7 +110,7 @@ export default class Game {
         return {
             attacked: attacking.id,
             by: plane.id,
-            damage: 1,
+            damage: stats.attack,
             dead: false,
             type: DamageEventType.PLANE_ATTACK,
             turn,

@@ -1,12 +1,17 @@
 export interface PlaneStats {
-    readonly speed: number
-    readonly turnSpeed: number
+    readonly cost: number
     readonly health: number
+    readonly turnSpeed: number
+    readonly speed: number
+    readonly attack: number
     readonly attackSpreadAngle: number
     readonly attackRange: number
-    readonly cost: number
 }
 
 export enum PlaneType {
-    BASIC = "BASIC",
+    STANDARD = "STANDARD",
+    FLYING_FORTRESS = "FLYING_FORTRESS",
+    THUNDERBIRD = "THUNDERBIRD",
+    SCRAPYARD_RESCUE = "SCRAPYARD_RESCUE",
+    PIGEON = "PIGEON",
 }
