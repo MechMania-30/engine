@@ -11,6 +11,8 @@ export const INITIAL_RESPONSE_TIMEOUT = 15_000 // The number of milliseconds all
 export const RESPONSE_TIMEOUT = 2_500 // The number of milliseconds allowed before a read/write times out, gives a disconnect strike
 export const DISCONNECT_STRIKES = 3 // The number of disconnect strikes before the client is disconnected and ignored
 
+export const DEBUG = !["0", "", undefined].includes(process.env.DEBUG)
+
 // Spawns for each team
 export const SPAWNS: { position: Position; angle: number }[] = [
     {

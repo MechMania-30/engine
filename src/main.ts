@@ -76,6 +76,7 @@ async function main() {
         setupPlayerForPort(1, team1Port, log),
     ])
 
+    console.log("Game started!")
     const game = new Game(players, log)
 
     let continues = true
