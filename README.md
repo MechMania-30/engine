@@ -11,7 +11,7 @@
 [![discord](https://img.shields.io/badge/-discord-purple?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/knWWFKTU)
 
 
-# engine
+# MechMania Engine
 
 The engine is responsible for running the game! 2 bots connect to the engine, the engine requests input from both of them, and then simulates the result. Finally, the engine will output a JSON gamelog that you can feed into the visualize to see what happened!
 
