@@ -13,8 +13,20 @@
 
 # MechMania Engine
 
-The engine is responsible for running the game! 2 bots connect to the engine, the engine requests input from both of them, and then simulates the result. Finally, the engine will output a JSON gamelog that you can feed into the visualize to see what happened!
+The engine is responsible for running the game!
+2 bots connect to the engine, the engine requests input from both of them, and then simulates the result.
+Finally, the engine will output a JSON gamelog that you can feed into the [Visualizer](https://github.com/MechMania-30/visualizer) to see what happened!
 
 </div>
 
-TODO: Instructions for participants here
+# Installation
+
+**You shouldn't need to do anything with the engine directly!** See the **starterpack instructions** for your starterpack for how to install the engine.
+
+If you really need to manually install the engine,
+and have read the instructions in the starterpack,
+you can use the `engine.py` python script to download the engine:
+
+```sh
+python engine.py
+```
