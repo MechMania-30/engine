@@ -372,6 +372,9 @@ export default class Game {
         Logger.setTurn(this.turn)
         if (this.turn == 0) {
             await this.initPlayerPlanes()
+            this.log.addTurn({
+                planes: deepCopy(Object.fromEntries(this.planes)),
+            })
 
             this.turn = 1
             return true // No action for turn 0
