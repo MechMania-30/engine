@@ -1,6 +1,6 @@
 import { PLANE_STATS } from "../config"
 import { PlaneStats, PlaneType } from "./data"
-import { Position } from "./position"
+import { Vector } from "./vector"
 
 export type PlaneId = string
 
@@ -11,7 +11,7 @@ export class Plane {
         readonly id: PlaneId,
         readonly team: number,
         readonly type: PlaneType,
-        public position: Position,
+        public position: Vector,
         public angle: number // Angle that faces [0, 360) so 0 = East, 90 = North, etc.
     ) {
         this.stats = PLANE_STATS[type]

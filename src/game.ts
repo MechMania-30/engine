@@ -1,5 +1,5 @@
 import { Plane, PlaneId } from "./plane/plane"
-import { Position } from "./plane/position"
+import { Vector } from "./plane/vector"
 import { PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
@@ -40,7 +40,7 @@ export default class Game {
         )
     }
 
-    private inBounds(position: Position) {
+    private inBounds(position: Vector) {
         return (
             Math.abs(position.x) < CONFIG.MAP_SIZE / 2 &&
             Math.abs(position.y) < CONFIG.MAP_SIZE / 2
@@ -66,7 +66,7 @@ export default class Game {
         if (plane.team == attacking.team) {
             return
         }
-        const diffVector = new Position(
+        const diffVector = new Vector(
             attacking.position.x - plane.position.x,
             attacking.position.y - plane.position.y
         )
@@ -188,7 +188,7 @@ export default class Game {
             while (offset < -bounds) {
                 offset += bounds
             }
-            const pos = new Position(spawnPosition.x + offset, spawnPosition.y)
+            const pos = new Vector(spawnPosition.x + offset, spawnPosition.y)
             this.planes.set(id, new Plane(id, team, type, pos, spawnAngle))
         }
     }
@@ -259,13 +259,13 @@ export default class Game {
         plane: Plane,
         deltaSpeed: number,
         deltaAngle: number
-    ): Position {
+    ): Vector {
         const currAngle = rad(plane.angle)
         const deltaAngleRad = rad(deltaAngle)
 
         // Handle straight shot case
         if (deltaAngle === 0) {
-            return new Position(
+            return new Vector(
                 deltaSpeed * Math.cos(currAngle),
                 deltaSpeed * Math.sin(currAngle)
             )
@@ -285,7 +285,7 @@ export default class Game {
         // while adding from the center to our final position (+Math.cos(fromCenterAngle + deltaAngleRad))
         // Essentially, fromCenterAngle is the angle from the center of the turn circle to our current position,
         // so we rotate around the turn circle
-        const deltaPosition = new Position(
+        const deltaPosition = new Vector(
             radius *
                 (Math.cos(fromCenterAngle + deltaAngleRad) -
                     Math.cos(fromCenterAngle)),

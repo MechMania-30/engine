@@ -1,5 +1,5 @@
 import { PlaneStats, PlaneType } from "./plane/data"
-import { Direction, Position } from "./plane/position"
+import { Direction, Vector } from "./plane/vector"
 
 export const MAP_SIZE = 100 // Size of map
 export const TURNS = 500 // Number of turns
@@ -14,13 +14,13 @@ export const DISCONNECT_STRIKES = 3 // The number of disconnect strikes before t
 export const DEBUG = !["0", "", undefined].includes(process.env.DEBUG)
 
 // Spawns for each team
-export const SPAWNS: { position: Position; angle: number }[] = [
+export const SPAWNS: { position: Vector; angle: number }[] = [
     {
-        position: new Position(0, MAP_SIZE / 2 - 5),
+        position: new Vector(0, MAP_SIZE / 2 - 5),
         angle: Direction.SOUTH,
     },
     {
-        position: new Position(0, -MAP_SIZE / 2 + 5),
+        position: new Vector(0, -MAP_SIZE / 2 + 5),
         angle: Direction.NORTH,
     },
 ]

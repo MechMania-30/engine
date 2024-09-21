@@ -1,10 +1,10 @@
-export class Position {
+export class Vector {
     constructor(
         public x: number,
         public y: number
     ) {}
 
-    add(other: Position) {
+    add(other: Vector) {
         this.x += other.x
         this.y += other.y
     }
