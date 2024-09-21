@@ -297,20 +297,7 @@ export default class Game {
         return deltaPosition
     }
 
-    // Runs a turn, returns true if the game should continue, false if it has ended
-    async runTurn(): Promise<boolean> {
-        Logger.setTurn(this.turn)
-        if (this.turn == 0) {
-            await this.initPlayerPlanes()
-
-            this.turn = 1
-            return true // No action for turn 0
-        }
-
-        // Steer planes
-        const angleDiffs = await this.steerPlayerPlanes()
-
-        // Run a set of interpolated steps for each turn
+    private interpolatePlanes(angleDiffs: Record<string, number>) {
         const alreadyAttackedPairs: Set<string> = new Set()
         for (let i = 0; i < CONFIG.ATTACK_STEPS; i++) {
             const subTurn = this.turn + i / CONFIG.ATTACK_STEPS
@@ -378,6 +365,23 @@ export default class Game {
                 plane.health = Math.max(0, plane.health - damage)
             }
         }
+    }
+
+    // Runs a turn, returns true if the game should continue, false if it has ended
+    async runTurn(): Promise<boolean> {
+        Logger.setTurn(this.turn)
+        if (this.turn == 0) {
+            await this.initPlayerPlanes()
+
+            this.turn = 1
+            return true // No action for turn 0
+        }
+
+        // Steer planes
+        const angleDiffs = await this.steerPlayerPlanes()
+
+        // Run a set of interpolated steps for each turn
+        this.interpolatePlanes(angleDiffs)
 
         // Log turn
         this.log.addTurn({
