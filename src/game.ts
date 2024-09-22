@@ -3,7 +3,7 @@ import { Vector } from "./plane/vector"
 import { PlaneType } from "./plane/data"
 import { PlaneSelectResponse, Player, SteerInputRequest } from "./player"
 import * as CONFIG from "./config"
-import { deg, degDiff, rad } from "./util/angle"
+import { deg, degDiff, normalizeAngle, rad } from "./util/angle"
 import { Log, Stats } from "./log"
 import deepCopy from "./util/deepCopy"
 import { Logger } from "./logger"
@@ -313,7 +313,7 @@ export default class Game {
                     DELTA * plane.stats.speed,
                     deltaAngle
                 )
-                plane.angle += deltaAngle
+                plane.angle = normalizeAngle(plane.angle + deltaAngle)
                 plane.position.add(deltaPosition)
 
                 // Check in bounds
