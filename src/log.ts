@@ -53,6 +53,18 @@ export class Log {
     }
 
     finish(wins: number[], stats: Stats) {
+        const newTurns = this.turns.map((turn) => ({
+            planes: Object.fromEntries(
+                Object.entries(turn.planes).map(([id, plane]) => [
+                    id,
+                    {
+                        ...plane,
+                        stats: undefined,
+                    },
+                ])
+            ),
+        }))
+
         this.output = JSON.stringify(
             {
                 wins,
@@ -60,7 +72,7 @@ export class Log {
                 planeStats: this.planeStats,
                 damageEvents: this.damageEvents,
                 validationEvents: this.validationEvents,
-                turns: this.turns,
+                turns: newTurns,
             },
             undefined,
             "\t"
