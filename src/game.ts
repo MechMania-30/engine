@@ -264,7 +264,7 @@ export default class Game {
         const deltaAngleRad = rad(deltaAngle)
 
         // Handle straight shot case
-        if (deltaAngle === 0) {
+        if (Math.abs(deltaAngle) < 0.00001) {
             return new Vector(
                 deltaSpeed * Math.cos(currAngle),
                 deltaSpeed * Math.sin(currAngle)
